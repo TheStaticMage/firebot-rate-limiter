@@ -5,10 +5,12 @@ import { rateLimitInvocationLimit } from './invocation-limit';
 import { rateLimitMessageId } from './message-id';
 import { rateLimitMetadataKey } from './metadata-key';
 import { rateLimitNext } from './next';
-import { rateLimitOriginalUsername } from './original-username';
 import { rateLimitRawObject } from './raw-object';
 import { rateLimitRejectReason } from './reason';
 import { rateLimitRemaining } from './remaining';
+import { rateLimitTriggerMetadata } from './trigger-metadata';
+import { rateLimitTriggerType } from './trigger-type';
+import { rateLimitTriggerUsername } from './trigger-username';
 
 export function registerReplaceVariables() {
     const { replaceVariableManager } = firebot.modules;
@@ -19,7 +21,9 @@ export function registerReplaceVariables() {
     replaceVariableManager.registerReplaceVariable(rateLimitMessageId);
     replaceVariableManager.registerReplaceVariable(rateLimitMetadataKey);
     replaceVariableManager.registerReplaceVariable(rateLimitNext);
-    replaceVariableManager.registerReplaceVariable(rateLimitOriginalUsername);
+    replaceVariableManager.registerReplaceVariable(rateLimitTriggerMetadata);
+    replaceVariableManager.registerReplaceVariable(rateLimitTriggerType);
+    replaceVariableManager.registerReplaceVariable(rateLimitTriggerUsername);
     replaceVariableManager.registerReplaceVariable(rateLimitRawObject);
     replaceVariableManager.registerReplaceVariable(rateLimitRejectReason);
     replaceVariableManager.registerReplaceVariable(rateLimitRemaining);
