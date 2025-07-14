@@ -12,7 +12,7 @@ export let firebot: RunRequest<any>;
 export let logger: Logger;
 let uiExtensionDisplayed: boolean;
 
-const scriptVersion = '0.0.1';
+const scriptVersion = '0.0.2';
 
 const script: Firebot.CustomScript<ScriptSettings> = {
     getScriptManifest: () => {
