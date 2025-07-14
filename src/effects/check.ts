@@ -367,9 +367,9 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 messageId: trigger.metadata.chatMessage?.id || "",
                 metadataKey: effect.rateLimitMetadata || "",
                 next: checkResult.next,
-                originalEventId: trigger.metadata.event?.id || "",
-                originalEventSourceId: trigger.metadata.eventSource?.id || "",
-                originalUsername: typeof trigger.metadata.eventData?.originalUsername === "string"
+                triggerMetadata: trigger.metadata || {},
+                triggerType: trigger.type || "",
+                triggerUsername: typeof trigger.metadata.eventData?.originalUsername === "string"
                     ? trigger.metadata.eventData.originalUsername
                     : (typeof trigger.metadata.eventData?.username === "string"
                         ? trigger.metadata.eventData.username

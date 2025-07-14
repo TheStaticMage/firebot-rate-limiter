@@ -78,9 +78,9 @@ export type LimitExceededEventMetadata = {
     messageId: string; // ID of the chat message that triggered the check
     metadataKey: string; // Key used to store metadata in the event
     next: number; // Seconds until next available token
-    originalEventId: string; // ID of the original event that triggered the check
-    originalEventSourceId: string; // ID of the original event source
-    originalUsername: string; // Username from the original event source if tracked
+    triggerMetadata: Record<string, any>; // Original event data that triggered the check
+    triggerType: string; // Type of the original event source
+    triggerUsername: string; // Username from the original event source if tracked
     rejectReason?: RejectReason; // Reason for rejection if not successful
     remaining: number; // Remaining invocations allowed after the request
     stackDepth: number; // Prevents infinite loops in event triggering
