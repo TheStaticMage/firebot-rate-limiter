@@ -95,6 +95,10 @@ export class BucketService {
         this.saveBucketsToFile();
     }
 
+    getAdvancedBucketsEnabled(): boolean {
+        return this.advancedBucketsEnabled;
+    }
+
     getBucket(bucketId: string, params: InstantiateBucketParameters | null = null): Bucket | undefined {
         if (this.buckets[bucketId]) {
             return this.buckets[bucketId];

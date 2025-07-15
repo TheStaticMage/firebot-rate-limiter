@@ -19,7 +19,7 @@ export function initializeBucketData(): void {
     }
 }
 
-class BucketData {
+export class BucketData {
     private bucketData: Record<string, BucketDataObject> = {};
     private bucketService: BucketService = bucketService;
     private filePath = getDataFilePath(bucketDataFilename);
@@ -77,7 +77,7 @@ class BucketData {
 
         if (!request.inquiry) {
             bData.invocationCount += 1;
-            bData.tokenCount -= request.tokenRequest;
+            bData.tokenCount -= Number(request.tokenRequest);
             this.bucketData[request.bucketId][request.key] = bData;
         }
 
@@ -89,12 +89,36 @@ class BucketData {
         };
     }
 
-    private addTokens(bucketId: string, bucket: Bucket, key: string): BucketDataEntry {
+    deleteKey(bucketId: string, key: string): boolean {
+        if (!this.bucketData[bucketId] || !this.bucketData[bucketId][key]) {
+            return false;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete this.bucketData[bucketId][key];
+        return true;
+    }
+
+    getAllBucketData(bucketId: string): Record<string, BucketDataEntry> {
+        return this.bucketData[bucketId] || {};
+    }
+
+    listKeys(bucketId: string): string[] {
+        const keys: string[] = [];
+        if (!this.bucketData[bucketId]) {
+            return keys;
+        }
+        return Object.keys(this.bucketData[bucketId]);
+    }
+
+    addTokens(bucketId: string, bucket: Bucket, key: string): BucketDataEntry {
         const bData = this.getBucketData(bucketId, bucket, key);
 
         // Add tokens between the last access and now
         const lastUpdated = bData.lastUpdated || Date.now();
-        const elapsedTime = Date.now() - lastUpdated;
+        let elapsedTime = Date.now() - lastUpdated;
+        if (elapsedTime < 0) {
+            elapsedTime = 0; // Prevent negative time
+        }
         const addTokensByTime = bucket.refillRate * (elapsedTime / 1000);
 
         let addTokens = 0;
@@ -178,6 +202,10 @@ class BucketData {
         return persistentData;
     }
 
+    hasKey(bucketId: string, key: string): boolean {
+        return !!(this.bucketData[bucketId] && this.bucketData[bucketId][key]);
+    }
+
     private loadBucketDataFromFile(): Record<string, BucketDataObject> {
         try {
             const { fs } = firebot.modules;
@@ -201,6 +229,15 @@ class BucketData {
         } catch (error) {
             logger.error(`Error saving bucket data to file: ${this.filePath} error=${error}`);
         }
+    }
+
+    setKey(bucketId: string, key: string, data: BucketDataEntry): void {
+        if (!this.bucketData[bucketId]) {
+            // This should never happen
+            logger.error(`Attempted to set key for non-existent bucket: id=${bucketId}`);
+            return;
+        }
+        this.bucketData[bucketId][key] = data;
     }
 
     private startAutoSave(): void {

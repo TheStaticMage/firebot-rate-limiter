@@ -182,8 +182,8 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             if (isNaN(effect.bucketSize) || Number(effect.bucketSize) <= 0) {
                 errors.push(`Bucket Size must be a number greater than 0`);
             }
-            if (isNaN(effect.bucketRate) || Number(effect.bucketRate) <= 0) {
-                errors.push(`Refill Rate must be greater than 0`);
+            if (isNaN(effect.bucketRate) || Number(effect.bucketRate) < 0) {
+                errors.push(`Refill Rate must be greater than or equal to 0`);
             }
         } else {
             if (!effect.bucketId) {
