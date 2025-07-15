@@ -40,3 +40,5 @@ jobs:
           echo "Version in package.json matches version in src/main.ts"
       - name: npm build
         run: npm run build
+      - name: Run Jest unit tests
+        run: npx jest --ci --coverage
