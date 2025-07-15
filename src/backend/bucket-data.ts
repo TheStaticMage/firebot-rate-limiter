@@ -24,9 +24,10 @@ export class BucketData {
     private bucketService: BucketService = bucketService;
     private filePath = getDataFilePath(bucketDataFilename);
     private persistedDataFileWriteInterval: NodeJS.Timeout | null = null;
-    private startTime = Date.now();
+    private startTime: number;
 
-    constructor() {
+    constructor(startTime?: number) {
+        this.startTime = startTime ?? Date.now();
         this.bucketData = this.loadBucketDataFromFile();
         this.bucketService = bucketService;
         this.startAutoSave();
@@ -131,10 +132,17 @@ export class BucketData {
             addTokens = addTokensByTime;
         }
 
-        const newTokenCount = Math.min(bucket.maxTokens, bData.tokenCount + Math.max(0, addTokens));
+        // Only add tokens if time has passed
+        let newTokenCount = bData.tokenCount;
+        let newLifetimeTokenCount = bData.lifetimeTokenCount;
+        if (addTokens > 0) {
+            newTokenCount = Math.min(bucket.maxTokens, bData.tokenCount + addTokens);
+            newLifetimeTokenCount = bData.lifetimeTokenCount + (newTokenCount - bData.tokenCount);
+        }
+
         this.bucketData[bucketId][key] = {
             tokenCount: newTokenCount,
-            lifetimeTokenCount: bData.lifetimeTokenCount + newTokenCount - bData.tokenCount,
+            lifetimeTokenCount: newLifetimeTokenCount,
             lastUpdated: Date.now(),
             invocationCount: bData.invocationCount
         };
