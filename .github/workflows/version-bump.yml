@@ -56,7 +56,7 @@ jobs:
           body: "This PR bumps the version to ${{ steps.bump_version.outputs.next-version }}."
           branch: "bump-version-${{ steps.bump_version.outputs.next-version }}"
           base: main
-          draft: false
+          draft: always-true
           labels: 'ignore-for-release'
           add-paths: |
             package.json
