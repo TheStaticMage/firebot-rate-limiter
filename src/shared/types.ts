@@ -8,6 +8,7 @@ export type Bucket = {
     lifetimeMaxTokensValue: number;
     persistBucket: boolean;
     fillFromStart: boolean;
+    fillBucketAcrossRestarts: boolean;
 }
 
 export type BucketWithId = Bucket & {

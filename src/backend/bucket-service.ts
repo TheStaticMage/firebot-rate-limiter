@@ -115,7 +115,8 @@ export class BucketService {
                 lifetimeMaxTokens: false,
                 lifetimeMaxTokensValue: 0,
                 persistBucket: false,
-                fillFromStart: true
+                fillFromStart: false,
+                fillBucketAcrossRestarts: false
             };
             return this.buckets[bucketId];
         }

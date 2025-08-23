@@ -40,6 +40,7 @@ describe('BucketService', () => {
         startTokens: 5,
         fillFromStart: false,
         persistBucket: true,
+        fillBucketAcrossRestarts: false,
         lifetimeMaxTokens: false,
         lifetimeMaxTokensValue: 0
     };

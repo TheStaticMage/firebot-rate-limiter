@@ -113,41 +113,43 @@ export class BucketData {
 
     addTokens(bucketId: string, bucket: Bucket, key: string): BucketDataEntry {
         const bData = this.getBucketData(bucketId, bucket, key);
+        this.bucketData[bucketId][key] = this.addTokensToBucket(bucket, bData);
+        return this.bucketData[bucketId][key];
+    }
 
+    private addTokensToBucket(bucket: Bucket, bData: BucketDataEntry): BucketDataEntry {
         // Add tokens between the last access and now
-        const lastUpdated = bData.lastUpdated || Date.now();
+        const lastUpdated = bData.lastUpdated || (bucket.fillFromStart ? this.startTime : 0) || Date.now();
         let elapsedTime = Date.now() - lastUpdated;
         if (elapsedTime < 0) {
             elapsedTime = 0; // Prevent negative time
         }
         const addTokensByTime = bucket.refillRate * (elapsedTime / 1000);
 
-        let addTokens = 0;
+        let tokensToAdd = 0;
         if (bucket.lifetimeMaxTokens) {
             // If lifetime max tokens is set, we need to ensure we don't exceed it
             const maxTokens = bucket.lifetimeMaxTokensValue || 999999999; // Default to a very high number if not set
-            addTokens = Math.min(addTokensByTime, maxTokens - bData.lifetimeTokenCount);
+            tokensToAdd = Math.min(addTokensByTime, maxTokens - bData.lifetimeTokenCount);
         } else {
             // If lifetime max tokens is not set, we can add as many as possible
-            addTokens = addTokensByTime;
+            tokensToAdd = addTokensByTime;
         }
 
         // Only add tokens if time has passed
         let newTokenCount = bData.tokenCount;
         let newLifetimeTokenCount = bData.lifetimeTokenCount;
-        if (addTokens > 0) {
-            newTokenCount = Math.min(bucket.maxTokens, bData.tokenCount + addTokens);
+        if (tokensToAdd > 0) {
+            newTokenCount = Math.min(bucket.maxTokens, bData.tokenCount + tokensToAdd);
             newLifetimeTokenCount = bData.lifetimeTokenCount + (newTokenCount - bData.tokenCount);
         }
 
-        this.bucketData[bucketId][key] = {
+        return {
             tokenCount: newTokenCount,
             lifetimeTokenCount: newLifetimeTokenCount,
             lastUpdated: Date.now(),
             invocationCount: bData.invocationCount
         };
-
-        return this.bucketData[bucketId][key];
     }
 
     private estimateNextAvailable(bucket: Bucket, bData: BucketDataEntry, tokenRequest: number): number {
@@ -188,12 +190,11 @@ export class BucketData {
         }
 
         // Initialize new bucket data entry
-        const fillTokens = bucket.fillFromStart ? bucket.refillRate * (Date.now() - this.startTime) / 1000 : 0;
-        const initialTokens = Math.min(bucket.maxTokens, bucket.startTokens + fillTokens);
+        const initialTokens = Math.min(bucket.maxTokens, bucket.startTokens);
         this.bucketData[bucketId][key] = {
             tokenCount: initialTokens,
             lifetimeTokenCount: initialTokens,
-            lastUpdated: Date.now(),
+            lastUpdated: bucket.fillFromStart ? this.startTime : Date.now(),
             invocationCount: 0
         };
         return this.bucketData[bucketId][key];
@@ -222,11 +223,28 @@ export class BucketData {
             }
 
             const data = fs.readFileSync(this.filePath, 'utf-8');
-            return JSON.parse(data);
+            return this.parseFileData(data);
         } catch (error) {
             logger.error(`Error loading bucket data from file: ${this.filePath} error=${error}`);
             return {};
         }
+    }
+
+    private parseFileData(data: string): Record<string, BucketDataObject> {
+        const parsed: Record<string, BucketDataObject> = JSON.parse(data);
+        const result: Record<string, BucketDataObject> = {};
+        for (const [bucketId, bucketData] of Object.entries(parsed)) {
+            const bucket = this.getBucket(bucketId);
+            if (bucket) {
+                result[bucketId] = bucketData;
+                if (!bucket.fillBucketAcrossRestarts) {
+                    for (const entryKey of Object.keys(result[bucketId])) {
+                        result[bucketId][entryKey].lastUpdated = 0;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     private saveBucketDataToFile(data: Record<string, BucketDataObject>): void {
