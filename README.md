@@ -49,16 +49,23 @@ The [tutorial](/doc/tutorial.md) implements the "cookies and marbles" example fr
 
 :bulb: _Many Firebot components support limits. If you can achieve what you need via native Firebot functionality, you generally should. This example is provided for educational purposes only._
 
+### Persist cooldowns across streams / Firebot restarts
+
+:bulb: _I do not believe that Firebot can natively do this._
+
+- Create an advanced bucket in the RATE LIMITER tab from the left frame
+- Check the "Persist bucket data across Firebot restarts" and "Fill across Firebot restarts" boxes.
+
 ### Real-life example: Preventing over-notification of small bits cheers
 
 ### Real-life example: Preventing over-use of TTS
 
 ## Support
 
-The best way to get help is in this project's thread on Discord. Join the [Crowbar Tools Discord](https://discord.gg/crowbartools-372817064034959370) and then visit the [thread for Firebot Rate Limiter]() there.
+The best way to get help is in my Discord server. Join the [The Static Discord](https://discord.gg/hw32MM2Qxq) and then visit the `#firebot-rate-limiter` channel there.
 
-  - Please do not DM me on Discord.
-  - Please do not ask for help in my chat when I am live on Twitch.
+- Please do not DM me on Discord.
+- Please do not ask for help in my chat when I am live on Twitch.
 
 Bug reports and feature requests are welcome via [GitHub Issues](https://github.com/TheStaticMage/firebot-rate-limiter/issues).
 
@@ -73,6 +80,8 @@ This script is released under the [GNU General Public License version 3](/LICENS
 If you use this on your stream, I would appreciate a shout-out. (Appreciated, but not required.)
 
 - <https://www.twitch.tv/thestaticmage>
+- <https://kick.com/thestaticmage>
+- <https://youtube.com/@thestaticmagerisk>
 
 ## FAQ
 

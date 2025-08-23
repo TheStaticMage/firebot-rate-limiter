@@ -41,6 +41,7 @@ const rateLimiterAddOrEditBucket: AngularJsComponent = {
         bucketLifetimeMaxTokens: "=",
         bucketLifetimeMaxTokensValue: "=",
         persistBucket: "=",
+        fillBucketAcrossRestarts: "=",
         saveButton: "&",
         cancelButton: "&"
     },
@@ -70,10 +71,13 @@ const rateLimiterAddOrEditBucket: AngularJsComponent = {
                     <firebot-input input-title="Lifetime Max Tokens" model="$ctrl.bucketLifetimeMaxTokensValue" data-type="number" required disable-variables="true" />
                 </div>
                 <div class="form-group">
-                    <firebot-checkbox label="Fill from start" model="$ctrl.bucketFillFromStart" tooltip="If checked, token replenishment will occur from the start of the stream (when Firebot is opened). This is different from the default behavior, where token replenishment begins after the first request." />
+                    <firebot-checkbox label="Fill from Firebot startup" model="$ctrl.bucketFillFromStart" tooltip="If checked, token replenishment will occur from the start of the stream (when Firebot is opened). This is different from the default behavior, where token replenishment begins after the first request." />
                 </div>
                 <div class="form-group">
                     <firebot-checkbox label="Persist bucket data across Firebot restarts" model="$ctrl.persistBucket" tooltip="If checked, the bucket data will be saved to a file and restored across Firebot restarts." />
+                </div>
+                <div class="form-group" ng-if="$ctrl.persistBucket">
+                    <firebot-checkbox label="Fill across Firebot restarts" model="$ctrl.fillBucketAcrossRestarts" tooltip="If checked, token replenishment will be simulated across streams and Firebot restarts, as if Firebot had not ever been shut down." />
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: center; width: 100%; margin-top: 20px;">
                     <button class="btn btn-default" ng-click="$ctrl.cancelButton()">Cancel</button>
@@ -175,7 +179,8 @@ const rateLimiterPage: AngularJsPage = {
                     bucket-lifetime-max-tokens="bucketLifetimeMaxTokens"
                     bucket-lifetime-max-tokens-value="bucketLifetimeMaxTokensValue"
                     persist-bucket="persistBucket"
-                    save-button="saveButton(bucketId, bucketName, bucketStartTokens, bucketMaxTokens, bucketRefillRate, bucketFillFromStart, bucketLifetimeMaxTokens, bucketLifetimeMaxTokensValue, persistBucket)"
+                    fill-bucket-across-restarts="fillBucketAcrossRestarts"
+                    save-button="saveButton(bucketId, bucketName, bucketStartTokens, bucketMaxTokens, bucketRefillRate, bucketFillFromStart, bucketLifetimeMaxTokens, bucketLifetimeMaxTokensValue, persistBucket, fillBucketAcrossRestarts)"
                     cancel-button="cancelButton()" />
             </div>
         </div>
@@ -199,6 +204,7 @@ const rateLimiterPage: AngularJsPage = {
             $scope.bucketLifetimeMaxTokens = bucket.lifetimeMaxTokens === true;
             $scope.bucketLifetimeMaxTokensValue = bucket.lifetimeMaxTokensValue === undefined ? 999999999 : bucket.lifetimeMaxTokensValue;
             $scope.persistBucket = bucket.persistBucket !== undefined ? bucket.persistBucket : false;
+            $scope.fillBucketAcrossRestarts = bucket.fillBucketAcrossRestarts === true;
             $scope.displayAddOrEditBucket = true;
         };
 
@@ -233,7 +239,7 @@ const rateLimiterPage: AngularJsPage = {
             $scope.displayDeleteConfirmation = true;
         };
 
-        $scope.saveButton = (bucketIdIn: string, bucketName: string, bucketStartTokens: number, bucketMaxTokens: number, bucketRefillRate: number, bucketFillFromStart: boolean, bucketLifetimeMaxTokens: boolean, bucketLifetimeMaxTokensValue: number, persistBucket: boolean) => {
+        $scope.saveButton = (bucketIdIn: string, bucketName: string, bucketStartTokens: number, bucketMaxTokens: number, bucketRefillRate: number, bucketFillFromStart: boolean, bucketLifetimeMaxTokens: boolean, bucketLifetimeMaxTokensValue: number, persistBucket: boolean, fillBucketAcrossRestarts: boolean) => {
             const bucketId = bucketIdIn || crypto.randomUUID();
             const data: Bucket = {
                 name: bucketName.trim(),
@@ -244,7 +250,8 @@ const rateLimiterPage: AngularJsPage = {
                 fillFromStart: bucketFillFromStart,
                 lifetimeMaxTokens: bucketLifetimeMaxTokens,
                 lifetimeMaxTokensValue: bucketLifetimeMaxTokensValue,
-                persistBucket: persistBucket
+                persistBucket: persistBucket,
+                fillBucketAcrossRestarts: fillBucketAcrossRestarts
             };
 
             const response = rateLimiterService.saveBucket(bucketId, data);

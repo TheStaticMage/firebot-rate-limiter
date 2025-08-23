@@ -10,7 +10,9 @@
         "build:version": "node ./scripts/update-version.js",
         "build:webpack": "webpack",
         "copy": "node ./scripts/copy-build.js",
-        "prepare": ""
+        "prepare": "",
+        "test": "jest --coverage",
+        "jest": "jest --coverage"
     },
     "author": "thestaticmage",
     "license": "GNU3",
