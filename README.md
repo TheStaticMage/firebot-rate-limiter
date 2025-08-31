@@ -60,6 +60,34 @@ The [tutorial](/doc/tutorial.md) implements the "cookies and marbles" example fr
 
 ### Real-life example: Preventing over-use of TTS
 
+### Real-life example: Shared rate limit for multiple events
+
+To make sure I don't miss chat messages, I had Firebot configured to play a sound when someone posts a chat message on Twitch. I set up the rate limiter so that this sound plays at most once every 5 seconds so it's not playing the sound continuously during periods of high activity. That setup looked like this:
+
+- Event: **Chat Message (Twitch)**
+- Filters:
+  - **Viewers Roles** / Doesn't include / Streamer
+  - **Viewers Roles** / Doesn't include / Stream Bot
+- Effects:
+  - **Rate Limiter: Check Request**: Bucket size = 5, Refill rate = 1, Key = Global, Stop effect execution if limit exceeded
+  - **Play sound**: A "ding" sound routed only to my headphones
+
+Recently I set up the [Firebot Kick Integration](https://github.com/TheStaticMage/firebot-mage-kick-integration) which has a separate chat event for Kick. However, if I just copied this same setup to the Kick event, the chat notification sounds would not be coordinated with each other. To address this, I can use an advanced bucket and the "Rate Limit Approved" event.
+
+1. Ensure that advanced buckets are enabled. If you see a RATE LIMITER option in the left frame of Firebot, you're good. Otherwise, go to Settings > Scripts > Manage Startup Scripts, click Edit next to Rate Limiter, check Enable Advanced Buckets, and save. You may need to restart Firebot to get the RATE LIMITER option to show up after enabling it for the first time.
+
+2. From the left frame, under "Custom", click on RATE LIMITER.
+
+3. Add a new bucket with these settings: Start Tokens = 5, Max Tokens = 5, Refill Rate = 1, and none of the other options checked. Save this bucket. (This is one allowed execution per 5 seconds.)
+
+4. For this step, you may create a new **Chat Message (Twitch)** event, or modify an existing event. In either case, add the **Rate Limiter: Check Request** effect with these settings: Bucket Type = Advanced, Bucket = _the bucket you created in step 3_, Key = Global, Tokens required = 5. From the options, check the _Trigger the 'Rate Limit Approved' event if approved_ box. (Note: You do NOT put the "Play Sound" effect in this list. We'll add that in a bit.)
+
+5. Repeat the previous step for any additional events that you want to use this shared rate limit.
+
+6. Create a new event of type **Rate Limit Approved**. Add a filter: **Rate Limiter Bucket** = _the bucket you created in step 3_. And then add any effect(s) -- in my case, it was the "Play Sound" effect, but this can be whatever you want.
+
+Now, whenever _either_ of the two trigger events happens, the same 5 second rate limit will apply. As an added bonus, you have only defined your "Play Sound" effect in one place, so if you add additional trigger events, you will effectively be using the same effect list to handle it.
+
 ## Support
 
 The best way to get help is in my Discord server. Join the [The Static Discord](https://discord.gg/hw32MM2Qxq) and then visit the `#firebot-rate-limiter` channel there.
