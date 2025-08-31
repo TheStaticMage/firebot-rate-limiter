@@ -1,7 +1,7 @@
 {
     "name": "firebot-rate-limiter",
     "scriptOutputName": "firebot-rate-limiter",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "description": "A rate limiter for Firebot",
     "main": "",
     "scripts": {
