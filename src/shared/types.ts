@@ -68,6 +68,18 @@ export type GetBucketsAsArrayResponse = {
     errorMessage?: string; // Optional error message
 }
 
+export type LimitApprovedEventMetadata = {
+    alwaysAllow: boolean; // Whether this approval was based on an "always" condition
+    success: boolean; // Whether the success was actually true, not considering "always" condition
+    bucketId: string;
+    bucketKey: string;
+    username: string;
+    messageId: string; // ID of the chat message that triggered the check
+    triggerMetadata: Record<string, any>; // Original event data that triggered the check
+    triggerType: string; // Type of the original event source
+    triggerUsername: string; // Username from the original event source if tracked
+}
+
 export type LimitExceededEventMetadata = {
     bucketId: string;
     bucketKey: string;

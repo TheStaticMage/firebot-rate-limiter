@@ -62,6 +62,7 @@ export class BucketService {
         logger.debug("Registered rate-limiter:getBuckets frontend communicator handler.");
 
         this.frontendCommunicator.on("rate-limiter:getBucketsAsArray", (): GetBucketsAsArrayResponse => {
+            logger.debug("rate-limiter:getBucketsAsArray request received.");
             if (this.fileReadError) {
                 return { buckets: [], errorMessage: this.fileReadError };
             }

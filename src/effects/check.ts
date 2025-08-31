@@ -2,7 +2,7 @@ import { Firebot } from '@crowbartools/firebot-custom-scripts-types';
 import { EffectScope } from '@crowbartools/firebot-custom-scripts-types/types/effects';
 import { bucketData } from '../backend/bucket-data';
 import { firebot, logger } from '../main';
-import { CheckRateLimitRequest, LimitExceededEventMetadata } from '../shared/types';
+import { CheckRateLimitRequest, LimitApprovedEventMetadata, LimitExceededEventMetadata } from '../shared/types';
 import { emitEvent } from '../events';
 
 type effectModel = {
@@ -20,6 +20,7 @@ type effectModel = {
     stopExecution: boolean;
     stopExecutionBubble: boolean;
     triggerEvent: boolean;
+    triggerApproveEvent: boolean;
     rateLimitMetadata: string;
     invocationLimit: boolean;
     invocationLimitValue: number;
@@ -148,7 +149,12 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                         placeholder-text="Enter maximum invocations"
                     />
                 </div>
-                <firebot-checkbox model="effect.triggerEvent" label="Trigger the 'Rate Limit Exceeded' event if exceeded" />
+                <div>
+                    <firebot-checkbox model="effect.triggerApproveEvent" label="Trigger the 'Rate Limit Approved' event if approved" />
+                </div>
+                <div>
+                    <firebot-checkbox model="effect.triggerEvent" label="Trigger the 'Rate Limit Exceeded' event if exceeded" />
+                </div>
                 <div class="form-group" ng-if="effect.triggerEvent">
                     <firebot-input
                         model="effect.rateLimitMetadata"
@@ -215,6 +221,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         $scope.effect.inquiry = $scope.effect.inquiry === true;
         $scope.effect.tokens = $scope.effect.tokens !== undefined ? $scope.effect.tokens : 10;
         $scope.effect.triggerEvent = $scope.effect.triggerEvent === true;
+        $scope.effect.triggerApproveEvent = $scope.effect.triggerApproveEvent === true;
         $scope.effect.rateLimitMetadata = $scope.effect.rateLimitMetadata || "";
         $scope.effect.invocationLimit = $scope.effect.invocationLimit === true;
         $scope.effect.invocationLimitValue = $scope.effect.invocationLimitValue || 0;
@@ -338,6 +345,27 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         if (alwaysAllow || checkResult.success) {
             logger.debug(`Rate limit PASS: alwaysAllow=${alwaysAllow} success=${checkResult.success} bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry} next=${checkResult.next} remaining=${checkResult.remaining} invocation=${checkResult.invocation}`);
             result.outputs.rateLimitAllowed = "true";
+
+            if (effect.triggerApproveEvent) {
+                logger.debug(`Emitting 'approved' event: bucketId=${request.bucketId} username=${trigger.metadata.username}`);
+                const approvedMetadata: LimitApprovedEventMetadata = {
+                    alwaysAllow: alwaysAllow,
+                    success: checkResult.success,
+                    bucketId: request.bucketId,
+                    bucketKey: bucketKey,
+                    username: trigger.metadata.username,
+                    messageId: trigger.metadata.chatMessage?.id || "",
+                    triggerMetadata: trigger.metadata || {},
+                    triggerType: trigger.type || "",
+                    triggerUsername: typeof trigger.metadata.eventData?.originalUsername === "string"
+                        ? trigger.metadata.eventData.originalUsername
+                        : (typeof trigger.metadata.eventData?.username === "string"
+                            ? trigger.metadata.eventData.username
+                            : trigger.metadata.username)
+                };
+                emitEvent("approved", approvedMetadata, false);
+            }
+
             return result;
         }
         logger.debug(`Rate limit FAIL: bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry} next=${checkResult.next} remaining=${checkResult.remaining} invocation=${checkResult.invocation} errorMessage=${checkResult.errorMessage} reason=${checkResult.rejectReason}`);
@@ -356,6 +384,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             }
 
             // Emit the event
+            logger.debug(`Emitting 'limit-exceeded' event: bucketId=${request.bucketId} username=${trigger.metadata.username} errorMessage=${checkResult.errorMessage}`);
             const eventMetadata: LimitExceededEventMetadata = {
                 bucketId: request.bucketId,
                 errorMessage: checkResult.errorMessage,

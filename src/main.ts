@@ -4,6 +4,7 @@ import { initializeBucketData } from './backend/bucket-data';
 import { bucketService, initializeBucketService } from './backend/bucket-service';
 import { registerEffects } from './effects';
 import { registerEventSource } from './events';
+import { registerFilters } from './filters';
 import { ScriptSettings } from './shared/types';
 import { registerUIExtensions } from './ui-extensions';
 import { registerReplaceVariables } from './variables';
@@ -64,6 +65,7 @@ const script: Firebot.CustomScript<ScriptSettings> = {
         initializeBucketData();
         registerEffects();
         registerEventSource();
+        registerFilters();
         registerReplaceVariables();
 
         const settings = runRequest.parameters;
