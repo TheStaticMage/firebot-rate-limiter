@@ -17,6 +17,14 @@ const eventSource: EventSource = {
                 errorMessage: "Rate limit exceeded. Please try again later.",
                 rejectReason: RejectReason.RateLimit
             }
+        },
+        {
+            id: "approved",
+            name: "Rate Limit Approved",
+            description: "Fires when a rate limit check passes.",
+            manualMetadata: {
+                bucketId: ""
+            }
         }
     ]
 };
