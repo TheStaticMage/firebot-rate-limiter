@@ -59,7 +59,7 @@ This tutorial configures the effect to stop the effect list if it is rate limite
 
 7. Click DASHBOARD from the left frame. You should see 4 messages there that look like this:
 
-    ```
+    ```text
     Ate a cookie at 2025-07-13 15:24:13!
     Ate a cookie at 2025-07-13 15:24:13!
     Ate a cookie at 2025-07-13 15:24:13!
@@ -104,9 +104,11 @@ You do not always need to stop execution of the effect list when the rate limit 
         - Click the _Add New Effect_ link.
         - In the search bar, type "feed" to filter, and select `Chat Feed Alert`. Then press the **Select** button.
         - Configure the alert message as follows:
-            ```
+
+            ```text
             Conditionally ate a cookie at $date[YYYY-MM-DD HH:mm:ss]!
             ```
+
         - When you're done, click **Add**.
 
     - Configure the effects within the "Otherwise" section as follows:
@@ -114,9 +116,11 @@ You do not always need to stop execution of the effect list when the rate limit 
         - Click the _Add New Effect_ link.
         - In the search bar, type "feed" to filter, and select `Chat Feed Alert`. Then press the **Select** button.
         - Configure the alert message as follows:
-            ```
+
+            ```text
             Failed to eat a cookie at $date[YYYY-MM-DD HH:mm:ss]! Try again in $effectOutput[rateLimitNext] sec.
             ```
+
         - When you're done, click **Add**.
 
     - Click the **Save** button.
@@ -127,7 +131,7 @@ You do not always need to stop execution of the effect list when the rate limit 
 
 6. Click DASHBOARD from the left frame. The messages should now look like this:
 
-    ```
+    ```text
     Conditionally ate a cookie at 2025-07-13 15:52:37!
     Conditionally ate a cookie at 2025-07-13 15:52:37!
     Conditionally ate a cookie at 2025-07-13 15:52:37!

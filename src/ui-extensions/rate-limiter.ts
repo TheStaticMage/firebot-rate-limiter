@@ -1,5 +1,5 @@
 import { AngularJsComponent, AngularJsFactory, AngularJsPage, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
-import { Bucket, DeleteBucketResponse, GetBucketsResponse } from "../shared/types";
+import { Bucket, BucketDataObject, DeleteBucketResponse, GetBucketsResponse } from "../shared/types";
 
 function rateLimiterServiceFunction(backendCommunicator: any): any {
     const service: any = {};
@@ -14,6 +14,10 @@ function rateLimiterServiceFunction(backendCommunicator: any): any {
 
     service.getBuckets = (): GetBucketsResponse => {
         return backendCommunicator.fireEventSync("rate-limiter:getBuckets", {});
+    };
+
+    service.getBucketData = (bucketId: string): BucketDataObject => {
+        return backendCommunicator.fireEventSync("rate-limiter:getBucketData", { bucketId });
     };
 
     service.saveBucket = (bucketId: string, bucket: Bucket): GetBucketsResponse => {
@@ -48,7 +52,7 @@ const rateLimiterAddOrEditBucket: AngularJsComponent = {
     template: `
         <div id="rateLimiterAddOrEditBucket" class="modal-content" style="width:600px; min-height:unset; padding:5px 0; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <div class="modal-header" style="text-align: center; width: 100%;">
-                <h3 class="modal-title" ng-if="$ctrl.bucketId !== ''">Edit Bucket</h3>
+                <h3 class="modal-title" ng-if="$ctrl.bucketId !== ''">Configure Bucket</h3>
                 <h3 class="modal-title" ng-if="$ctrl.bucketId === ''">Add New Bucket</h3>
             </div>
             <div class="modal-body" style="width: 100%;">
@@ -82,6 +86,45 @@ const rateLimiterAddOrEditBucket: AngularJsComponent = {
                 <div style="display: flex; gap: 10px; justify-content: center; width: 100%; margin-top: 20px;">
                     <button class="btn btn-default" ng-click="$ctrl.cancelButton()">Cancel</button>
                     <button class="btn btn-primary" ng-click="$ctrl.saveButton()">Save</button>
+                </div>
+            </div>
+        </div>
+    `,
+    controller: () => {
+        // No additional logic needed in the controller
+    }
+};
+
+const rateLimiterEditBucketData: AngularJsComponent = {
+    name: "rateLimiterEditBucketData",
+    bindings: {
+        bucketId: "<",
+        bucketName: "<",
+        bucketData: "=",
+        textError: "<",
+        closeButton: "&",
+        formatDataButton: "&",
+        saveDataButton: "&"
+    },
+    template: `
+        <div id="rateLimiterEditBucketData" class="modal-content" style="width:600px; min-height:unset; padding:5px 0; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="modal-header" style="text-align: center; width: 100%;">
+                <h3 class="modal-title">Edit Bucket Data - {{$ctrl.bucketName}}</h3>
+            </div>
+            <div class="modal-body" style="width: 100%;">
+                <div class="modal-subheader" style="padding: 0 0 4px 0">
+                    BUCKET DATA
+                </div>
+                <div style="width: 100%; position: relative;">
+                    <div class="form-group" ng-class="{'has-error': $ctrl.textError }" style="margin-bottom: 0;">
+                        <textarea id="textField" ng-model="$ctrl.bucketData" class="form-control" name="text" placeholder="Enter text" rows="8" cols="40" aria-describedby="textHelpBlock"></textarea>
+                        <span id="textHelpBlock" class="help-block" ng-show="$ctrl.textError != ''">{{ $ctrl.textError }}</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; width: 100%; margin-top: 20px;">
+                    <button class="btn btn-default" ng-click="$ctrl.closeButton()">Cancel</button>
+                    <button class="btn btn-primary" ng-click="$ctrl.formatDataButton()">Format</button>
+                    <button class="btn btn-primary" ng-click="$ctrl.saveDataButton()">Save</button>
                 </div>
             </div>
         </div>
@@ -149,7 +192,8 @@ const rateLimiterPage: AngularJsPage = {
                                 </p>
                             </div>
                             <div style="font-size:17px">
-                                <button class="btn btn-default" style="margin-right: 10px" ng-click="addOrEditBucketButton(bucket.id)">Edit</button>
+                                <button class="btn btn-default" style="margin-right: 10px" ng-click="bucketDataEditorButton(bucket.id)">View/Edit Bucket Data</button>
+                                <button class="btn btn-default" style="margin-right: 10px" ng-click="addOrEditBucketButton(bucket.id)">Configure Bucket</button>
                                 <span uib-tooltip="Remove Bucket" tooltip-append-to-body="true" class="clickable" style="color:red;" ng-click="removeBucketButton(bucket.id)">
                                     <i class="fas fa-trash-alt"></i>
                                 </span>
@@ -183,6 +227,16 @@ const rateLimiterPage: AngularJsPage = {
                     save-button="saveButton(bucketId, bucketName, bucketStartTokens, bucketMaxTokens, bucketRefillRate, bucketFillFromStart, bucketLifetimeMaxTokens, bucketLifetimeMaxTokensValue, persistBucket, fillBucketAcrossRestarts)"
                     cancel-button="cancelButton()" />
             </div>
+            <div class="modal-body" ng-if="displayEditBucketData">
+                <rate-limiter-edit-bucket-data
+                    bucket-id="bucketId"
+                    bucket-name="bucketName"
+                    bucket-data="bucketData"
+                    text-error="textError"
+                    close-button="cancelButton()"
+                    format-data-button="formatDataButton(bucketData)"
+                    save-data-button="saveDataButton(bucketId, bucketData)" />
+            </div>
         </div>
     `,
     controller: ($scope: any, backendCommunicator: any, rateLimiterService: any, ngToast: any) => {
@@ -190,8 +244,23 @@ const rateLimiterPage: AngularJsPage = {
         $scope.bucketMap = {} as Record<string, Bucket>;
         $scope.bucketName = "";
         $scope.buckets = [];
-        $scope.displayDeleteConfirmation = false;
+        $scope.bucketData = "{}";
+        $scope.textError = "";
         $scope.advancedBucketsEnabled = rateLimiterService.getAdvancedBucketsEnabled();
+
+        $scope.setBucketDataField = (formattedData: string) => {
+            // Force update both scope and DOM element
+            $scope.bucketData = formattedData;
+            $scope.$evalAsync(() => {
+                // Also directly update the DOM element to ensure it reflects the change
+                const textField = document.getElementById('textField') as HTMLTextAreaElement;
+                if (textField) {
+                    textField.value = formattedData;
+                    // Trigger input event to sync with AngularJS
+                    textField.dispatchEvent(new Event('input'));
+                }
+            });
+        };
 
         $scope.addOrEditBucketButton = (bucketId?: string) => {
             const bucket = bucketId ? $scope.bucketMap[bucketId] || {} : {};
@@ -205,16 +274,46 @@ const rateLimiterPage: AngularJsPage = {
             $scope.bucketLifetimeMaxTokensValue = bucket.lifetimeMaxTokensValue === undefined ? 999999999 : bucket.lifetimeMaxTokensValue;
             $scope.persistBucket = bucket.persistBucket !== undefined ? bucket.persistBucket : false;
             $scope.fillBucketAcrossRestarts = bucket.fillBucketAcrossRestarts === true;
+            $scope.cancelButton();
             $scope.displayAddOrEditBucket = true;
+        };
+
+        $scope.bucketDataEditorButton = (bucketId: string) => {
+            const bucket = $scope.bucketMap[bucketId];
+            if (!bucket) {
+                ngToast.create({
+                    className: 'danger',
+                    content: `Error: Bucket not found: id=${bucketId}`
+                });
+                return;
+            }
+
+            const bucketData = rateLimiterService.getBucketData(bucketId);
+            if (bucketData.errorMessage) {
+                ngToast.create({
+                    className: 'danger',
+                    content: `Error fetching bucket data: ${bucketData.errorMessage}`
+                });
+                return;
+            }
+
+            $scope.bucketId = bucketId;
+            $scope.bucketName = bucket.name || "Unknown Bucket";
+            $scope.textError = "";
+            $scope.cancelButton();
+            $scope.displayEditBucketData = true;
+            $scope.setBucketDataField(JSON.stringify(bucketData.bucketData, null, 4));
         };
 
         $scope.cancelButton = () => {
             $scope.displayAddOrEditBucket = false;
             $scope.displayDeleteConfirmation = false;
+            $scope.displayEditBucketData = false;
         };
+        $scope.cancelButton();
 
         $scope.deleteButton = (bucketId: string) => {
-            $scope.displayDeleteConfirmation = false;
+            $scope.cancelButton();
 
             const response = rateLimiterService.deleteBucket(bucketId);
             if (response.errorMessage) {
@@ -234,6 +333,7 @@ const rateLimiterPage: AngularJsPage = {
         };
 
         $scope.removeBucketButton = (bucketId: string) => {
+            $scope.cancelButton();
             $scope.bucketId = bucketId;
             $scope.bucketName = $scope.buckets.find((b: any) => b.id === bucketId)?.name || "Unknown Bucket";
             $scope.displayDeleteConfirmation = true;
@@ -272,6 +372,39 @@ const rateLimiterPage: AngularJsPage = {
             $scope.displayAddOrEditBucket = false;
         };
 
+        $scope.formatDataButton = (bucketData: string) => {
+            try {
+                const parsedData = JSON.parse(bucketData);
+                const formattedData = JSON.stringify(parsedData, null, 4);
+                $scope.setBucketDataField(formattedData);
+            } catch (error) {
+                $scope.textError = error instanceof Error ? error.message : String(error);
+                return;
+            }
+
+            const result = backendCommunicator.fireEventSync("rate-limiter:saveBucketData", { bucketId: "", bucketData: bucketData, dryRun: true });
+            $scope.textError = result.errorMessage || "";
+        };
+
+        $scope.saveDataButton = (bucketId: string, bucketData: string) => {
+            const result = backendCommunicator.fireEventSync("rate-limiter:saveBucketData", { bucketId: bucketId, bucketData: bucketData, dryRun: false });
+            if (result.errorMessage) {
+                ngToast.create({
+                    className: 'danger',
+                    content: "Error saving bucket data!"
+                });
+                $scope.textError = result.errorMessage;
+                return;
+            }
+
+            ngToast.create({
+                className: 'success',
+                content: `Bucket data for "${$scope.bucketName}" saved successfully.`
+            });
+
+            $scope.cancelButton();
+        };
+
         $scope.getBuckets = () => {
             const response = rateLimiterService.getBuckets();
             if (response.errorMessage) {
@@ -308,7 +441,7 @@ export const rateLimiterExtension: UIExtension = {
     id: "rateLimiterExtension",
     pages: [rateLimiterPage],
     providers: {
-        components: [rateLimiterAddOrEditBucket, rateLimiterDeleteConfirmation],
+        components: [rateLimiterAddOrEditBucket, rateLimiterDeleteConfirmation, rateLimiterEditBucketData],
         factories: [rateLimiterService]
     }
 };
