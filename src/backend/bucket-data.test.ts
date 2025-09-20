@@ -8,12 +8,17 @@ jest.mock('../main', () => ({
                 existsSync: jest.fn(),
                 readFileSync: jest.fn(),
                 writeFileSync: jest.fn()
+            },
+            frontendCommunicator: {
+                on: jest.fn(),
+                send: jest.fn()
             }
         }
     },
     logger: {
         debug: jest.fn(),
-        error: jest.fn()
+        error: jest.fn(),
+        warn: jest.fn()
     }
 }));
 
@@ -333,6 +338,198 @@ describe('BucketData', () => {
             const persistent = (bucketData as any).getPersistentBucketData();
             expect(Object.keys(persistent)).toContain(bucketId);
             expect(Object.keys(persistent)).not.toContain('bucket2');
+        });
+
+        describe('handleSaveBucketDataEvent', () => {
+            let bucketData: BucketData;
+            let testBucketData: any;
+
+            beforeEach(() => {
+                mockedBucketService.__setBuckets({
+                    [bucketId]: bucket
+                });
+                bucketData = new BucketData();
+                testBucketData = {
+                    user1: {
+                        tokenCount: 5,
+                        lifetimeTokenCount: 10,
+                        lastUpdated: Date.now(),
+                        invocationCount: 2
+                    },
+                    user2: {
+                        tokenCount: 3,
+                        lifetimeTokenCount: 8,
+                        lastUpdated: Date.now(),
+                        invocationCount: 1
+                    }
+                };
+            });
+
+            it('should successfully save valid bucket data', () => {
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: JSON.stringify(testBucketData),
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(true);
+                expect(result.errorMessage).toBeUndefined();
+                expect(bucketData.getAllBucketData(bucketId)).toEqual(testBucketData);
+            });
+
+            it('should validate without saving in dry run mode', () => {
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: JSON.stringify(testBucketData),
+                    dryRun: true
+                });
+
+                expect(result.success).toBe(true);
+                expect(result.errorMessage).toBeUndefined();
+                expect(bucketData.getAllBucketData(bucketId)).toEqual({});
+            });
+
+            it('should return error for non-existent bucket', () => {
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId: 'nonexistent',
+                    bucketData: JSON.stringify(testBucketData),
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('No bucket found');
+            });
+
+            it('should return error for invalid JSON', () => {
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: 'invalid json {',
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('Invalid JSON');
+            });
+
+            it('should return error for non-object bucket data', () => {
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: '"string value"',
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('expected object but got string');
+            });
+
+            it('should return error for array bucket data', () => {
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: '[1, 2, 3]',
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('expected object but got object');
+            });
+
+            it('should return error for entry with missing tokenCount', () => {
+                const invalidData = {
+                    user1: {
+                        lifetimeTokenCount: 10,
+                        lastUpdated: Date.now(),
+                        invocationCount: 2
+                    }
+                };
+
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: JSON.stringify(invalidData),
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('Invalid bucketData for user1');
+                expect(result.errorMessage).toContain('tokenCount is not a number');
+            });
+
+            it('should return error for entry with wrong type fields', () => {
+                const invalidData = {
+                    user1: {
+                        tokenCount: 'five',
+                        lifetimeTokenCount: 'ten',
+                        lastUpdated: 'yesterday',
+                        invocationCount: 'two'
+                    }
+                };
+
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: JSON.stringify(invalidData),
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('Invalid bucketData for user1');
+                expect(result.errorMessage).toContain('tokenCount is not a number (got string)');
+                expect(result.errorMessage).toContain('lifetimeTokenCount is not a number (got string)');
+                expect(result.errorMessage).toContain('lastUpdated is not a number (got string)');
+                expect(result.errorMessage).toContain('invocationCount is not a number (got string)');
+            });
+
+            it('should return error for null entry', () => {
+                const invalidData = {
+                    user1: null
+                };
+
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: JSON.stringify(invalidData),
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('Invalid bucketData for user1');
+                expect(result.errorMessage).toContain('entry is not an object (got object)');
+            });
+
+            it('should allow dry run validation without bucket ID', () => {
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId: '',
+                    bucketData: JSON.stringify(testBucketData),
+                    dryRun: true
+                });
+
+                expect(result.success).toBe(true);
+                expect(result.errorMessage).toBeUndefined();
+            });
+
+            it('should return specific error message identifying problematic key', () => {
+                const mixedData = {
+                    validUser: {
+                        tokenCount: 5,
+                        lifetimeTokenCount: 10,
+                        lastUpdated: Date.now(),
+                        invocationCount: 2
+                    },
+                    invalidUser: {
+                        tokenCount: 'not a number',
+                        lifetimeTokenCount: 10,
+                        lastUpdated: Date.now(),
+                        invocationCount: 2
+                    }
+                };
+
+                const result = (bucketData as any).handleSaveBucketDataEvent({
+                    bucketId,
+                    bucketData: JSON.stringify(mixedData),
+                    dryRun: false
+                });
+
+                expect(result.success).toBe(false);
+                expect(result.errorMessage).toContain('Invalid bucketData for invalidUser');
+                expect(result.errorMessage).toContain('tokenCount is not a number');
+            });
         });
     });
 });

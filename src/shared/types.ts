@@ -22,6 +22,18 @@ export type BucketDataEntry = {
     invocationCount: number;
 };
 
+export type BucketDataObject = Record<string, BucketDataEntry>;
+
+export type GetBucketDataResponse = {
+    bucketData: BucketDataObject | null;
+    errorMessage?: string; // Optional error message
+}
+
+export type SaveBucketDataResponse = {
+    success: boolean;
+    errorMessage?: string; // Optional error message
+}
+
 export type CheckRateLimitResponse = {
     success: boolean;
     next: number; // Seconds until next available token or 0 if available

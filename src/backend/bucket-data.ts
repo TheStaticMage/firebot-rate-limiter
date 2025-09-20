@@ -1,5 +1,6 @@
+import { FrontendCommunicator } from '@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator';
 import { firebot, logger } from '../main';
-import { Bucket, BucketDataEntry, CheckRateLimitRequest, CheckRateLimitResponse, InstantiateBucketParameters, RejectReason } from '../shared/types';
+import { Bucket, BucketDataEntry, BucketDataObject, CheckRateLimitRequest, CheckRateLimitResponse, GetBucketDataResponse, InstantiateBucketParameters, RejectReason, SaveBucketDataResponse } from '../shared/types';
 import { bucketService, BucketService } from './bucket-service';
 import { getDataFilePath } from './util';
 
@@ -7,8 +8,6 @@ const bucketDataFilename = 'persisted-bucket-data.json';
 const bucketDataPersistenceWriteInterval = 5000; // 5 seconds
 
 export let bucketData: BucketData;
-
-type BucketDataObject = Record<string, BucketDataEntry>;
 
 export function initializeBucketData(): void {
     if (!bucketData) {
@@ -23,14 +22,103 @@ export class BucketData {
     private bucketData: Record<string, BucketDataObject> = {};
     private bucketService: BucketService = bucketService;
     private filePath = getDataFilePath(bucketDataFilename);
+    private frontendCommunicator: FrontendCommunicator;
     private persistedDataFileWriteInterval: NodeJS.Timeout | null = null;
     private startTime: number;
 
     constructor(startTime?: number) {
+        this.frontendCommunicator = firebot.modules.frontendCommunicator;
         this.startTime = startTime ?? Date.now();
         this.bucketData = this.loadBucketDataFromFile();
         this.bucketService = bucketService;
         this.startAutoSave();
+
+        this.frontendCommunicator.on("rate-limiter:getBucketData", (data: { bucketId: string }): GetBucketDataResponse => {
+            return this.handleGetBucketDataEvent(data);
+        });
+        logger.debug("Registered rate-limiter:getBucketData frontend communicator handler.");
+
+        this.frontendCommunicator.on("rate-limiter:saveBucketData", (data: { bucketId: string, bucketData: string, dryRun: boolean }): SaveBucketDataResponse => {
+            return this.handleSaveBucketDataEvent(data);
+        });
+        logger.debug("Registered rate-limiter:saveBucketData frontend communicator handler.");
+    }
+
+    private handleGetBucketDataEvent(data: { bucketId: string }): GetBucketDataResponse {
+        const { bucketId } = data;
+        const bucket = this.getBucket(bucketId);
+        if (!bucket) {
+            logger.warn(`rate-limiter:getBucketData: No bucket data found for bucket ID: ${bucketId}`);
+            return { bucketData: null, errorMessage: `No bucket found for bucket ID: ${bucketId}` };
+        }
+
+        const bData = this.refreshTokensForBucket(bucketId, bucket);
+        logger.debug(`rate-limiter:getBucketData: Retrieved bucket data for bucket ID: ${bucketId} (${Object.keys(bData).length} keys)`);
+        return { bucketData: bData };
+    }
+
+    private handleSaveBucketDataEvent(data: { bucketId: string, bucketData: string, dryRun: boolean }): SaveBucketDataResponse {
+        const { bucketId, bucketData, dryRun } = data;
+
+        // Validate that the bucket exists if given
+        if (bucketId || !dryRun) {
+            const bucket = this.getBucket(bucketId);
+            if (!bucket) {
+                logger.warn(`rate-limiter:saveBucketData: No bucket found for bucket ID: ${bucketId}`);
+                return { success: false, errorMessage: `No bucket found for bucket ID: ${bucketId}` };
+            }
+        }
+
+        // Validate that rawBucketData is a valid JSON string
+        let parsedBucketData: BucketDataObject;
+        try {
+            parsedBucketData = JSON.parse(bucketData);
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            logger.warn(`rate-limiter:saveBucketData: Invalid JSON provided for bucket ID: ${bucketId} - ${errorMsg}`);
+            return { success: false, errorMessage: `Invalid JSON provided for bucket ID: ${bucketId} - ${errorMsg}` };
+        }
+
+        // Validate that bucketData is a BucketDataObject (object with string keys and BucketDataEntry values)
+        if (typeof parsedBucketData !== 'object' || parsedBucketData === null || Array.isArray(parsedBucketData)) {
+            logger.warn(`rate-limiter:saveBucketData: Invalid bucketData provided for bucket ID: ${bucketId} - expected object but got ${typeof parsedBucketData}`);
+            return { success: false, errorMessage: `Invalid bucketData provided for bucket ID: ${bucketId} - expected object but got ${typeof parsedBucketData}` };
+        }
+
+        // Validate each entry in the bucketData
+        for (const [key, entry] of Object.entries(parsedBucketData)) {
+            const errors: string[] = [];
+
+            if (typeof entry !== 'object' || entry === null) {
+                errors.push(`entry is not an object (got ${typeof entry})`);
+            } else {
+                if (typeof entry.tokenCount !== 'number') {
+                    errors.push(`tokenCount is not a number (got ${typeof entry.tokenCount})`);
+                }
+                if (typeof entry.lifetimeTokenCount !== 'number') {
+                    errors.push(`lifetimeTokenCount is not a number (got ${typeof entry.lifetimeTokenCount})`);
+                }
+                if (typeof entry.lastUpdated !== 'number') {
+                    errors.push(`lastUpdated is not a number (got ${typeof entry.lastUpdated})`);
+                }
+                if (typeof entry.invocationCount !== 'number') {
+                    errors.push(`invocationCount is not a number (got ${typeof entry.invocationCount})`);
+                }
+            }
+
+            if (errors.length > 0) {
+                const errorMessage = `Invalid bucketData for ${key} - ${errors.join(', ')}`;
+                logger.warn(`rate-limiter:saveBucketData: ${errorMessage}`);
+                return { success: false, errorMessage };
+            }
+        }
+
+        if (!dryRun) {
+            this.bucketData[bucketId] = parsedBucketData;
+            logger.debug(`rate-limiter:saveBucketData: Saved bucket data for bucket ID: ${bucketId}`);
+        }
+
+        return { success: true };
     }
 
     check(request: CheckRateLimitRequest): CheckRateLimitResponse {
@@ -245,6 +333,16 @@ export class BucketData {
             }
         }
         return result;
+    }
+
+    private refreshTokensForBucket(bucketId: string, bucket: Bucket): BucketDataObject {
+        if (!this.bucketData[bucketId]) {
+            return {};
+        }
+        for (const [key, entry] of Object.entries(this.bucketData[bucketId])) {
+            this.bucketData[bucketId][key] = this.addTokensToBucket(bucket, entry);
+        }
+        return this.bucketData[bucketId];
     }
 
     private saveBucketDataToFile(data: Record<string, BucketDataObject>): void {
