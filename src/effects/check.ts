@@ -17,6 +17,7 @@ type effectModel = {
     inquiry: boolean;
     enforceStreamer: boolean;
     enforceBot: boolean;
+    rejectReward: boolean;
     stopExecution: boolean;
     stopExecutionBubble: boolean;
     triggerEvent: boolean;
@@ -136,6 +137,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             <div class="form-group">
                 <firebot-checkbox model="effect.enforceStreamer" label="Enforce limit for streamer" />
                 <firebot-checkbox model="effect.enforceBot" label="Enforce limit for bot" />
+                <firebot-checkbox model="effect.rejectReward" label="Reject channel point reward if limit exceeded" />
                 <firebot-checkbox model="effect.stopExecution" label="Stop effect execution if limit exceeded" />
                 <div style="margin-left: 10px" ng-if="effect.stopExecution">
                     <firebot-checkbox model="effect.stopExecutionBubble" label="Bubble the stop effect execution request to all parent effect lists" />
@@ -216,6 +218,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         $scope.effect.enforceStreamer = $scope.effect.enforceStreamer === true;
         $scope.effect.key = $scope.effect.key || "";
         $scope.effect.keyType = $scope.effect.keyType || "user";
+        $scope.effect.rejectReward = $scope.effect.rejectReward === true;
         $scope.effect.stopExecution = $scope.effect.stopExecution !== undefined ? $scope.effect.stopExecution : true;
         $scope.effect.stopExecutionBubble = $scope.effect.stopExecutionBubble === true;
         $scope.effect.inquiry = $scope.effect.inquiry === true;
@@ -412,7 +415,39 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             emitEvent("limit-exceeded", eventMetadata, false);
         }
 
+        // We may reject a channel point reward
+        if (effect.rejectReward) {
+            const redemptionId = trigger.metadata.eventData?.redemptionId || trigger.metadata.redemptionId;
+            const rewardId = trigger.metadata.eventData?.rewardId || trigger.metadata.rewardId;
+
+            if (typeof redemptionId === "string" && redemptionId.length > 0 && typeof rewardId === "string" && rewardId.length > 0) {
+                const rejectionRequest: RewardRedemptionsApprovalRequest = {
+                    rewardId: rewardId,
+                    redemptionIds: [redemptionId],
+                    approve: false
+                };
+                const { twitchApi } = firebot.modules;
+                try {
+                    const response = await twitchApi.channelRewards.approveOrRejectChannelRewardRedemption(rejectionRequest);
+                    if (!response) {
+                        throw new Error("Call to approveOrRejectChannelRewardRedemption returned false");
+                    }
+                    logger.debug(`Rejecting channel point reward: bucketId=${request.bucketId} key=${bucketKey} redemptionId=${redemptionId} rewardId=${rewardId}`);
+                } catch (err) {
+                    logger.error(`Error rejecting channel point reward: bucketId=${request.bucketId} key=${bucketKey} redemptionId=${redemptionId} rewardId=${rewardId} error=${err}`);
+                }
+            } else {
+                logger.warn(`Not rejecting channel point reward because this does not appear to be a channel point reward redemption: bucketId=${request.bucketId} key=${bucketKey}`);
+            }
+        }
+
         // Done
         return result;
     }
 };
+
+interface RewardRedemptionsApprovalRequest {
+    rewardId: string;
+    redemptionIds?: string[];
+    approve?: boolean;
+}
