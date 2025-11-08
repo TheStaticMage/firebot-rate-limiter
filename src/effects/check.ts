@@ -357,7 +357,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                     bucketId: request.bucketId,
                     bucketKey: bucketKey,
                     username: trigger.metadata.username,
-                    messageId: trigger.metadata.chatMessage?.id || "",
+                    messageId: (trigger.metadata.chatMessage as any)?.id || "",
                     triggerMetadata: trigger.metadata || {},
                     triggerType: trigger.type || "",
                     triggerUsername: typeof trigger.metadata.eventData?.originalUsername === "string"
@@ -396,7 +396,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 invocationLimit: effect.invocationLimit,
                 invocationLimitValue: effect.invocationLimitValue,
                 bucketKey: bucketKey,
-                messageId: trigger.metadata.chatMessage?.id || "",
+                messageId: (trigger.metadata.chatMessage as any)?.id || "",
                 metadataKey: effect.rateLimitMetadata || "",
                 next: checkResult.next,
                 triggerMetadata: trigger.metadata || {},
