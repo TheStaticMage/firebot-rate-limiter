@@ -61,6 +61,22 @@ const script: Firebot.CustomScript<ScriptSettings> = {
         firebot = runRequest;
         logger = runRequest.modules.logger;
 
+        // Make sure we have a sufficiently recent version of Firebot.
+        if (!runRequest || !runRequest.firebot || !runRequest.firebot.version) {
+            throw new Error("Firebot version information is not available.");
+        }
+
+        const firebotVersion = runRequest.firebot.version;
+        const firebotParts = firebotVersion.split('.');
+        const majorVersion = parseInt(firebotParts[0], 10);
+        const minorVersion = parseInt(firebotParts[1] || '0', 10);
+        if (isNaN(majorVersion) || isNaN(minorVersion) || majorVersion < 5 || (majorVersion === 5 && minorVersion < 65)) {
+            const { frontendCommunicator } = runRequest.modules;
+            frontendCommunicator.send("error", `The installed version of Firebot Rate Limiter requires Firebot 5.65 or later. You are running Firebot ${firebotVersion}. Please update Firebot to use this plugin.`);
+            return;
+        }
+
+        logger.info(`Starting Rate Limiter v${scriptVersion} on Firebot v${firebotVersion}`);
         initializeBucketService();
         initializeBucketData();
         registerEffects();
