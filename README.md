@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This is a rate limiter to prevent particular effects from running too frequently in Firebot. This is primarily intended to help avoid abuse, but it can also be used to implement advanced logic around cooldowns, maximum invocations per stream, etc.
+This is a rate limiter to prevent particular effects from running too frequently in [Firebot](https://firebot.app). This is primarily intended to help avoid abuse, but it can also be used to implement advanced logic around cooldowns, maximum invocations per stream, etc.
 
 Some of the things you can use this rate limiter to help with include:
 
@@ -29,9 +29,15 @@ This illustration demonstrates the [token bucket](https://en.wikipedia.org/wiki/
 
 The [tutorial](/doc/tutorial.md) implements the "cookies and marbles" example in Firebot.
 
+## Documentation
+
+- [Installation](/doc/installation.md)
+- [Upgrading](/doc/upgrading.md)
+- [Tutorial](/doc/tutorial.md)
+
 ## Installation
 
-The script needs to be installed like any other Firebot startup script.
+The plugin needs to be installed like any other Firebot startup script.
 
 For detailed instructions, consult: [Installation](/doc/installation.md)
 
@@ -103,7 +109,7 @@ Contributions are welcome via [Pull Requests](https://github.com/TheStaticMage/f
 
 ## License
 
-This script is released under the [GNU General Public License version 3](/LICENSE). That makes it free to use whether your stream is monetized or not.
+This plugin is released under the [GNU General Public License version 3](/LICENSE). That makes it free to use whether your stream is monetized or not.
 
 If you use this on your stream, I would appreciate a shout-out. (Appreciated, but not required.)
 

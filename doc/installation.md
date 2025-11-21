@@ -1,20 +1,20 @@
-## Installation
+# Installation
 
-The script needs to be installed like any other Firebot startup script:
+## Requirements
 
-1. From the latest [Release](https://github.com/TheStaticMage/firebot-rate-limiter/releases), download `Firebot-Rate-Limiter-<version>.js` into your Firebot scripts directory (File &gt; Open Data Folder, then select the "scripts" directory).
+| Plugin Version | Firebot Version |
+|---|---|
+| 0.1.0+ | 5.65+ |
+| 0.0.7 | 5.64 |
 
-    :warning: If you are upgrading from a prior version, delete any older versions of this script.
+## Installation: Plugin
 
-2. Enable custom scripts in Firebot (Settings &gt; Scripts).
+1. Enable custom scripts in Firebot (Settings > Scripts) if you have not already done so.
+2. From the latest [Release](https://github.com/TheStaticMage/firebot-rate-limiter/releases), download `Firebot-Rate-Limiter-<version>.js` into your Firebot scripts directory (File > Open Data Folder, then select the "scripts" directory).
+3. Go to Settings > Scripts > Manage Startup Scripts > Add New Script and add the `Firebot-Rate-Limiter-<version>.js` script.
+4. Restart Firebot. (The plugin will _not_ be loaded until you actually restart Firebot.)
 
-3. Add the `Firebot-Rate-Limiter-<version>.js` script that you just added as a startup script (Settings &gt; Scripts &gt; Manage Startup Scripts &gt; Add New Script).
-
-    :warning: If you are upgrading from a prior version, delete any references to the older versions.
-
-4. Restart Firebot.
-
-After installation, it will not be immediately apparent that you have installed the script. However, the following resources will now be available:
+After installation, the following resources will now be available:
 
 - The **Rate Limiter: Check Request** effect
 - The **Rate Limit Exceeded**
