@@ -70,6 +70,11 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 label: "Raw Object",
                 description: "The raw object with the rate limiter state for this request. **This is not guaranteed to be stable and may change in future versions.**",
                 defaultName: "rateLimitRawObject"
+            },
+            {
+                label: "Maximum Allowed Invocations",
+                description: "The maximum number of times this effect can be successfully invoked. This will be a number, or -1 if the maximum allowed invocations is not defined.",
+                defaultName: "rateLimitMaxAllowedInvocations"
             }
         ]
     },
@@ -287,7 +292,8 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 rateLimitRawObject: {
                     request: {},
                     response: {}
-                }
+                },
+                rateLimitMaxAllowedInvocations: effect.invocationLimit ? effect.invocationLimitValue : -1
             }
         };
 
