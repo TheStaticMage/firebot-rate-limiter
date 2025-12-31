@@ -1,0 +1,47 @@
+<firebot-tabs class="rate-limiter-tabs" ng-init="activeTab = 'buckets'" active="activeTab" type="underlined" page-tabs="true">
+    <firebot-tab name="buckets" label="Buckets">
+        <firebot-item-table
+            items="buckets"
+            headers="bucketHeaders"
+            context-menu-options="bucketMenuOptions(item)"
+            add-new-button-text="New Bucket"
+            on-add-new-clicked="addOrEditBucketButton()"
+            no-data-message="No buckets found. Click 'New Bucket' to get started."
+            none-found-message="No buckets found."
+            search-placeholder="Search buckets"
+        >
+        </firebot-item-table>
+    </firebot-tab>
+</firebot-tabs>
+<div class="modal-body" ng-if="displayDeleteConfirmation">
+    <rate-limiter-delete-confirmation
+        bucket-id="bucketId"
+        bucket-name="bucketName"
+        delete-button="deleteButton(bucketId)"
+        cancel-button="cancelButton()" />
+</div>
+<div class="modal-body" ng-if="displayAddOrEditBucket">
+    <rate-limiter-add-or-edit-bucket
+        bucket-id="bucketId"
+        bucket-name="bucketName"
+        bucket-start-tokens="bucketStartTokens"
+        bucket-max-tokens="bucketMaxTokens"
+        bucket-refill-rate="bucketRefillRate"
+        bucket-fill-from-start="bucketFillFromStart"
+        bucket-lifetime-max-tokens="bucketLifetimeMaxTokens"
+        bucket-lifetime-max-tokens-value="bucketLifetimeMaxTokensValue"
+        persist-bucket="persistBucket"
+        fill-bucket-across-restarts="fillBucketAcrossRestarts"
+        save-button="saveButton(bucketId, bucketName, bucketStartTokens, bucketMaxTokens, bucketRefillRate, bucketFillFromStart, bucketLifetimeMaxTokens, bucketLifetimeMaxTokensValue, persistBucket, fillBucketAcrossRestarts)"
+        cancel-button="cancelButton()" />
+</div>
+<div class="modal-body" ng-if="displayEditBucketData">
+    <rate-limiter-edit-bucket-data
+        bucket-id="bucketId"
+        bucket-name="bucketName"
+        bucket-data="bucketData"
+        text-error="textError"
+        close-button="cancelButton()"
+        format-data-button="formatDataButton(bucketData)"
+        save-data-button="saveDataButton(bucketId, bucketData)" />
+</div>

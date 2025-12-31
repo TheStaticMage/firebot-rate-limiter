@@ -1,0 +1,9 @@
+.rate-limiter-tabs .firebot-tabset.page-tabs {
+    margin: -15px -15px 0;
+    width: calc(100% + 30px);
+}
+
+firebot-tab[name="buckets"] firebot-item-table {
+    overflow-y: visible;
+    height: auto;
+}
