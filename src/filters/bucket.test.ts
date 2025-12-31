@@ -38,21 +38,13 @@ describe('bucketFilter.predicate', () => {
         expect(logger.warn).toHaveBeenCalled();
     });
 
-    it('returns true if advanced buckets are disabled', async () => {
-        bucketService.getAdvancedBucketsEnabled.mockReturnValue(false);
-        expect(await bucketFilter.predicate(filterSettings, eventData)).toBe(true);
-        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Advanced buckets are disabled'));
-    });
-
     it('returns true if bucket is not found', async () => {
-        bucketService.getAdvancedBucketsEnabled.mockReturnValue(true);
         bucketService.getBucket.mockReturnValue(undefined);
         expect(await bucketFilter.predicate(filterSettings, eventData)).toBe(true);
         expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Bucket in filter is no longer valid'));
     });
 
     it('returns correct logic for comparisonType "is"', async () => {
-        bucketService.getAdvancedBucketsEnabled.mockReturnValue(true);
         bucketService.getBucket.mockReturnValue({});
         // bucketId === value, comparisonType === 'is' => true
         expect(await bucketFilter.predicate(filterSettings, eventData)).toBe(true);
@@ -62,7 +54,6 @@ describe('bucketFilter.predicate', () => {
     });
 
     it('returns correct logic for comparisonType "is not"', async () => {
-        bucketService.getAdvancedBucketsEnabled.mockReturnValue(true);
         bucketService.getBucket.mockReturnValue({});
         // bucketId === value, comparisonType === 'is not' => false
         expect(await bucketFilter.predicate({ value: 'bucket1', comparisonType: 'is not' }, eventData)).toBe(false);

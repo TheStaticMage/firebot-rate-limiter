@@ -85,7 +85,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         ]
     },
     optionsTemplate: `
-        <eos-container header="Bucket Type" pad-top="true" ng-if="advancedBucketsEnabled">
+        <eos-container header="Bucket Type" pad-top="true">
             <firebot-select
                 options="{ simple: 'Simple', advanced: 'Advanced' }"
                 ng-init="bucketType = effect.bucketType || 'simple'"
@@ -243,7 +243,6 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         $scope.effect.bucketSize = $scope.effect.bucketSize !== undefined ? $scope.effect.bucketSize : 10;
         $scope.effect.bucketRate = $scope.effect.bucketRate !== undefined ? $scope.effect.bucketRate : 1;
 
-        $scope.advancedBucketsEnabled = backendCommunicator.fireEventSync("rate-limiter:getAdvancedBucketsEnabled", {});
         $scope.bucketType = $scope.effect.bucketType;
 
         $scope.keyTypes = {

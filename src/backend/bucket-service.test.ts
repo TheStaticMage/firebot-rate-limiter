@@ -189,18 +189,6 @@ describe('BucketService', () => {
         expect(arr[1].name).toBe('Zeta');
     });
 
-    it('should set advancedBucketsEnabled and notify frontend', () => {
-        service.setAdvancedBucketsEnabled(true);
-        expect((service as any).advancedBucketsEnabled).toBe(true);
-        expect(firebot.modules.frontendCommunicator.send).toHaveBeenCalledWith(
-            'rate-limiter:show-hide-advanced-buckets', true
-        );
-    });
-
-    it('should return advancedBucketsEnabled state', () => {
-        service.setAdvancedBucketsEnabled(true);
-        expect(service.getAdvancedBucketsEnabled()).toBe(true);
-    });
 
     it('should handle file read error gracefully', () => {
         (firebot.modules.fs.existsSync as jest.Mock).mockReturnValue(true);

@@ -57,13 +57,11 @@ For example, if you have a special reward that can only be redeemed once per wee
 
 To enable persistence for a bucket:
 
-1. Ensure that advanced buckets are enabled. If you see a RATE LIMITER option in the left frame of Firebot, you're good. Otherwise, go to Settings > Scripts > Manage Startup Scripts, click Edit next to Rate Limiter, check Enable Advanced Buckets, and save. You may need to restart Firebot to get the RATE LIMITER option to show up after enabling it for the first time.
+1. From the left frame, under "Custom", click on RATE LIMITER.
 
-2. From the left frame, under "Custom", click on RATE LIMITER.
+2. Create a new advanced bucket or edit an existing one. Check the "Persist bucket data across Firebot restarts" box.
 
-3. Create a new advanced bucket or edit an existing one. Check the "Persist bucket data across Firebot restarts" box.
-
-4. Optionally, check the "Fill across Firebot restarts" box. This option controls what happens to the bucket while Firebot is not running. If checked, the bucket will continue to refill tokens even when Firebot is offline, so when you start Firebot again, it will be as if time kept passing. If unchecked, the bucket will remain frozen at whatever state it was in when Firebot shut down.
+3. Optionally, check the "Fill across Firebot restarts" box. This option controls what happens to the bucket while Firebot is not running. If checked, the bucket will continue to refill tokens even when Firebot is offline, so when you start Firebot again, it will be as if time kept passing. If unchecked, the bucket will remain frozen at whatever state it was in when Firebot shut down.
 
 :bulb: _Tip: Use "Fill across Firebot restarts" for time-based cooldowns (like "once per week") but leave it unchecked for counter-based limits (like "3 times per stream")._
 
@@ -77,11 +75,9 @@ Here's how I implemented this using the rate limiter:
 
 #### Step 1: Create an advanced bucket
 
-1. Ensure that advanced buckets are enabled. If you see a RATE LIMITER option in the left frame of Firebot, you're good. Otherwise, go to Settings > Scripts > Manage Startup Scripts, click Edit next to Rate Limiter, check Enable Advanced Buckets, and save. Restart Firebot if needed.
+1. From the left frame, under "Custom", click on RATE LIMITER.
 
-2. From the left frame, under "Custom", click on RATE LIMITER.
-
-3. Add a new bucket with these settings: Start Tokens = 100, Max Tokens = 100, Refill Rate = 1 (this gives 1 token per minute of passive refill). Leave the persistence options unchecked. Save this bucket.
+2. Add a new bucket with these settings: Start Tokens = 100, Max Tokens = 100, Refill Rate = 1 (this gives 1 token per minute of passive refill). Leave the persistence options unchecked. Save this bucket.
 
 #### Step 2: Add effects to your cheer alert (in this order)
 
@@ -153,15 +149,13 @@ To make sure I don't miss chat messages, I had Firebot configured to play a soun
 
 Recently I set up the [Firebot Kick Integration](https://github.com/TheStaticMage/firebot-mage-kick-integration) which has a separate chat event for Kick. However, if I just copied this same setup to the Kick event, the chat notification sounds would not be coordinated with each other. To address this, I can use an advanced bucket and the "Rate Limit Approved" event.
 
-1. Ensure that advanced buckets are enabled. If you see a RATE LIMITER option in the left frame of Firebot, you're good. Otherwise, go to Settings > Scripts > Manage Startup Scripts, click Edit next to Rate Limiter, check Enable Advanced Buckets, and save. Restart Firebot if needed.
+1. From the left frame, under "Custom", click on RATE LIMITER. Add a new bucket with these settings: Start Tokens = 5, Max Tokens = 5, Refill Rate = 1, and none of the other options checked. Save this bucket. (This is one allowed execution per 5 seconds.)
 
-2. From the left frame, under "Custom", click on RATE LIMITER. Add a new bucket with these settings: Start Tokens = 5, Max Tokens = 5, Refill Rate = 1, and none of the other options checked. Save this bucket. (This is one allowed execution per 5 seconds.)
+2. For this step, you may create a new **Chat Message (Twitch)** event, or modify an existing event. In either case, add the **Rate Limiter: Check Request** effect with these settings: Bucket Type = Advanced, Bucket = _the bucket you created in step 1_, Key = Global, Tokens required = 5. From the options, check the _Trigger the 'Rate Limit Approved' event if approved_ box. (Note: You do NOT put the "Play Sound" effect in this list. We'll add that in a bit.)
 
-3. For this step, you may create a new **Chat Message (Twitch)** event, or modify an existing event. In either case, add the **Rate Limiter: Check Request** effect with these settings: Bucket Type = Advanced, Bucket = _the bucket you created in step 2_, Key = Global, Tokens required = 5. From the options, check the _Trigger the 'Rate Limit Approved' event if approved_ box. (Note: You do NOT put the "Play Sound" effect in this list. We'll add that in a bit.)
+3. Repeat the previous step for any additional events that you want to use this shared rate limit.
 
-4. Repeat the previous step for any additional events that you want to use this shared rate limit.
-
-5. Create a new event of type **Rate Limit Approved**. Add a filter: **Rate Limiter Bucket** = _the bucket you created in step 2_. And then add any effect(s) -- in my case, it was the "Play Sound" effect, but this can be whatever you want.
+4. Create a new event of type **Rate Limit Approved**. Add a filter: **Rate Limiter Bucket** = _the bucket you created in step 1_. And then add any effect(s) -- in my case, it was the "Play Sound" effect, but this can be whatever you want.
 
 Now, whenever _either_ of the two trigger events happens, the same 5 second rate limit will apply. As an added bonus, you have only defined your "Play Sound" effect in one place, so if you add additional trigger events, you will effectively be using the same effect list to handle it.
 

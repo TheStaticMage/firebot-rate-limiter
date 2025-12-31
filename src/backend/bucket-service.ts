@@ -17,7 +17,6 @@ export function initializeBucketService(): void {
 }
 
 export class BucketService {
-    private advancedBucketsEnabled = false;
     private buckets: Record<string, Bucket> = {};
     private fileReadError = "";
     private filePath = getDataFilePath(bucketFilename);
@@ -37,11 +36,6 @@ export class BucketService {
             }
         });
         logger.debug("Registered rate-limiter:deleteBucket frontend communicator handler.");
-
-        this.frontendCommunicator.on("rate-limiter:getAdvancedBucketsEnabled", (): boolean => {
-            return this.advancedBucketsEnabled;
-        });
-        logger.debug("Registered rate-limiter:getAdvancedBucketsEnabled frontend communicator handler.");
 
         this.frontendCommunicator.on("rate-limiter:getBucket", (data: { bucketId: string }): GetBucketResponse => {
             const { bucketId } = data;
@@ -94,10 +88,6 @@ export class BucketService {
         delete this.buckets[bucketId];
         logger.info(`Deleted bucket: id=${bucketId}`);
         this.saveBucketsToFile();
-    }
-
-    getAdvancedBucketsEnabled(): boolean {
-        return this.advancedBucketsEnabled;
     }
 
     getBucket(bucketId: string, params: InstantiateBucketParameters | null = null): Bucket | undefined {
@@ -219,11 +209,5 @@ export class BucketService {
         if (bucket.refillRate < 0) {
             throw new Error("Invalid bucket definition: Bucket refill rate must be non-negative.");
         }
-    }
-
-    setAdvancedBucketsEnabled(enabled: boolean): void {
-        this.advancedBucketsEnabled = enabled;
-        logger.info(`Advanced Buckets feature set to: ${enabled}`);
-        this.frontendCommunicator.send('rate-limiter:show-hide-advanced-buckets', enabled);
     }
 }

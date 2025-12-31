@@ -8,10 +8,6 @@ function rateLimiterServiceFunction(backendCommunicator: any): any {
         return backendCommunicator.fireEventSync("rate-limiter:deleteBucket", { bucketId });
     };
 
-    service.getAdvancedBucketsEnabled = (): boolean => {
-        return backendCommunicator.fireEventSync("rate-limiter:getAdvancedBucketsEnabled", {});
-    };
-
     service.getBuckets = (): GetBucketsResponse => {
         return backendCommunicator.fireEventSync("rate-limiter:getBuckets", {});
     };
@@ -169,74 +165,68 @@ const rateLimiterPage: AngularJsPage = {
     icon: "fa-stopwatch",
     type: "angularjs",
     template: `
-        <div ng-if="!advancedBucketsEnabled" class="modal-body">
-            <p>Advanced bucket features are disabled. Please enable them in the script settings to use this page.</p>
-            <p>If you just disabled advanced buckets, you will need to restart Firebot to remove this page from the sidebar.</p>
-        </div>
-        <div ng-if="advancedBucketsEnabled">
-            <div class="modal-body">
-                <eos-container header="Buckets">
-                    <p class="help-text">Create at least one bucket for each action that you want to limit.</p>
-                    <p class="help-text">You can name the buckets whatever you want. You can rename them or change their parameters at any time.</p>
+        <div class="modal-body">
+            <eos-container header="Buckets">
+                <p class="help-text">Create at least one bucket for each action that you want to limit.</p>
+                <p class="help-text">You can name the buckets whatever you want. You can rename them or change their parameters at any time.</p>
 
-                    <div class="list-group" style="margin-bottom: 0;">
-                        <div class="list-group-item flex-row-center jspacebetween" ng-repeat="bucket in buckets track by bucket.id">
-                            <div>
-                                <h4 class="list-group-item-heading">{{bucket.name}}</h4>
-                                <p class="list-group-item-text muted">
-                                    <span ng-if="bucket.persistBucket">Persisted,</span>
-                                    Start Tokens: {{bucket.startTokens}},
-                                    Max Tokens: {{bucket.maxTokens}},
-                                    Refill Rate: {{bucket.refillRate}},
-                                    Lifetime Max: {{bucket.lifetimeMaxTokens}}
-                                </p>
-                            </div>
-                            <div style="font-size:17px">
-                                <button class="btn btn-default" style="margin-right: 10px" ng-click="bucketDataEditorButton(bucket.id)">View/Edit Bucket Data</button>
-                                <button class="btn btn-default" style="margin-right: 10px" ng-click="addOrEditBucketButton(bucket.id)">Configure Bucket</button>
-                                <span uib-tooltip="Remove Bucket" tooltip-append-to-body="true" class="clickable" style="color:red;" ng-click="removeBucketButton(bucket.id)">
-                                    <i class="fas fa-trash-alt"></i>
-                                </span>
-                            </div>
+                <div class="list-group" style="margin-bottom: 0;">
+                    <div class="list-group-item flex-row-center jspacebetween" ng-repeat="bucket in buckets track by bucket.id">
+                        <div>
+                            <h4 class="list-group-item-heading">{{bucket.name}}</h4>
+                            <p class="list-group-item-text muted">
+                                <span ng-if="bucket.persistBucket">Persisted,</span>
+                                Start Tokens: {{bucket.startTokens}},
+                                Max Tokens: {{bucket.maxTokens}},
+                                Refill Rate: {{bucket.refillRate}},
+                                Lifetime Max: {{bucket.lifetimeMaxTokens}}
+                            </p>
+                        </div>
+                        <div style="font-size:17px">
+                            <button class="btn btn-default" style="margin-right: 10px" ng-click="bucketDataEditorButton(bucket.id)">View/Edit Bucket Data</button>
+                            <button class="btn btn-default" style="margin-right: 10px" ng-click="addOrEditBucketButton(bucket.id)">Configure Bucket</button>
+                            <span uib-tooltip="Remove Bucket" tooltip-append-to-body="true" class="clickable" style="color:red;" ng-click="removeBucketButton(bucket.id)">
+                                <i class="fas fa-trash-alt"></i>
+                            </span>
                         </div>
                     </div>
-                    <div style="margin-top: 10px;">
-                        <button type="button" class="btn btn-primary pull-left" ng-click="addOrEditBucketButton()">Add New Bucket</button>
-                    </div>
-                </eos-container>
-            </div>
-            <div class="modal-body" ng-if="displayDeleteConfirmation">
-                <rate-limiter-delete-confirmation
-                    bucket-id="bucketId"
-                    bucket-name="bucketName"
-                    delete-button="deleteButton(bucketId)"
-                    cancel-button="cancelButton()" />
-            </div>
-            <div class="modal-body" ng-if="displayAddOrEditBucket">
-                <rate-limiter-add-or-edit-bucket
-                    bucket-id="bucketId"
-                    bucket-name="bucketName"
-                    bucket-start-tokens="bucketStartTokens"
-                    bucket-max-tokens="bucketMaxTokens"
-                    bucket-refill-rate="bucketRefillRate"
-                    bucket-fill-from-start="bucketFillFromStart"
-                    bucket-lifetime-max-tokens="bucketLifetimeMaxTokens"
-                    bucket-lifetime-max-tokens-value="bucketLifetimeMaxTokensValue"
-                    persist-bucket="persistBucket"
-                    fill-bucket-across-restarts="fillBucketAcrossRestarts"
-                    save-button="saveButton(bucketId, bucketName, bucketStartTokens, bucketMaxTokens, bucketRefillRate, bucketFillFromStart, bucketLifetimeMaxTokens, bucketLifetimeMaxTokensValue, persistBucket, fillBucketAcrossRestarts)"
-                    cancel-button="cancelButton()" />
-            </div>
-            <div class="modal-body" ng-if="displayEditBucketData">
-                <rate-limiter-edit-bucket-data
-                    bucket-id="bucketId"
-                    bucket-name="bucketName"
-                    bucket-data="bucketData"
-                    text-error="textError"
-                    close-button="cancelButton()"
-                    format-data-button="formatDataButton(bucketData)"
-                    save-data-button="saveDataButton(bucketId, bucketData)" />
-            </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button type="button" class="btn btn-primary pull-left" ng-click="addOrEditBucketButton()">Add New Bucket</button>
+                </div>
+            </eos-container>
+        </div>
+        <div class="modal-body" ng-if="displayDeleteConfirmation">
+            <rate-limiter-delete-confirmation
+                bucket-id="bucketId"
+                bucket-name="bucketName"
+                delete-button="deleteButton(bucketId)"
+                cancel-button="cancelButton()" />
+        </div>
+        <div class="modal-body" ng-if="displayAddOrEditBucket">
+            <rate-limiter-add-or-edit-bucket
+                bucket-id="bucketId"
+                bucket-name="bucketName"
+                bucket-start-tokens="bucketStartTokens"
+                bucket-max-tokens="bucketMaxTokens"
+                bucket-refill-rate="bucketRefillRate"
+                bucket-fill-from-start="bucketFillFromStart"
+                bucket-lifetime-max-tokens="bucketLifetimeMaxTokens"
+                bucket-lifetime-max-tokens-value="bucketLifetimeMaxTokensValue"
+                persist-bucket="persistBucket"
+                fill-bucket-across-restarts="fillBucketAcrossRestarts"
+                save-button="saveButton(bucketId, bucketName, bucketStartTokens, bucketMaxTokens, bucketRefillRate, bucketFillFromStart, bucketLifetimeMaxTokens, bucketLifetimeMaxTokensValue, persistBucket, fillBucketAcrossRestarts)"
+                cancel-button="cancelButton()" />
+        </div>
+        <div class="modal-body" ng-if="displayEditBucketData">
+            <rate-limiter-edit-bucket-data
+                bucket-id="bucketId"
+                bucket-name="bucketName"
+                bucket-data="bucketData"
+                text-error="textError"
+                close-button="cancelButton()"
+                format-data-button="formatDataButton(bucketData)"
+                save-data-button="saveDataButton(bucketId, bucketData)" />
         </div>
     `,
     controller: ($scope: any, backendCommunicator: any, rateLimiterService: any, ngToast: any) => {
@@ -246,7 +236,6 @@ const rateLimiterPage: AngularJsPage = {
         $scope.buckets = [];
         $scope.bucketData = "{}";
         $scope.textError = "";
-        $scope.advancedBucketsEnabled = rateLimiterService.getAdvancedBucketsEnabled();
 
         $scope.setBucketDataField = (formattedData: string) => {
             // Force update both scope and DOM element
@@ -430,10 +419,6 @@ const rateLimiterPage: AngularJsPage = {
         };
 
         $scope.getBuckets();
-
-        backendCommunicator.on("rate-limiter:show-hide-advanced-buckets", (advancedBucketsEnabled: boolean) => {
-            $scope.advancedBucketsEnabled = advancedBucketsEnabled;
-        });
     }
 };
 

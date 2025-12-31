@@ -13,7 +13,6 @@ import { registerReplaceVariables } from './variables';
 export let firebot: RunRequest<any>;
 export let logger: Logger;
 export let approvalService: ApprovalService;
-let uiExtensionDisplayed: boolean;
 
 function initializeApprovalService(): void {
     if (!approvalService) {
@@ -38,35 +37,7 @@ const script: Firebot.CustomScript<ScriptSettings> = {
         };
     },
     getDefaultParameters: () => {
-        return {
-            advancedBuckets: {
-                type: "boolean",
-                title: "Enable Advanced Buckets",
-                description: "Enable advanced bucket features for more control over rate limiting.",
-                default: false,
-                tip: "This will allow for buckets that persist across sessions, have a cap on maximum lifetime tokens, and more, at the expense of having to manage these buckets in a separate interface."
-            }
-        };
-    },
-    parametersUpdated: (settings: ScriptSettings) => {
-        if (settings.advancedBuckets) {
-            logger.info('Advanced Buckets enabled.');
-            if (!uiExtensionDisplayed) {
-                registerUIExtensions();
-                uiExtensionDisplayed = true;
-            }
-        } else {
-            logger.info('Advanced Buckets disabled.');
-            if (uiExtensionDisplayed) {
-                const { frontendCommunicator } = firebot.modules;
-                frontendCommunicator.send(
-                    'error',
-                    'Advanced bucket features have been successfully disabled. However, due to limitations, the "Rate Limiter" item in the left sidebar will remain visible until Firebot is restarted.'
-                );
-            }
-        }
-
-        bucketService.setAdvancedBucketsEnabled(settings.advancedBuckets);
+        return {};
     },
     run: (runRequest) => {
         firebot = runRequest;
@@ -95,13 +66,7 @@ const script: Firebot.CustomScript<ScriptSettings> = {
         registerEventSource();
         registerFilters();
         registerReplaceVariables();
-
-        const settings = runRequest.parameters;
-        if (settings.advancedBuckets) {
-            registerUIExtensions();
-            uiExtensionDisplayed = true;
-            bucketService.setAdvancedBucketsEnabled(settings.advancedBuckets);
-        }
+        registerUIExtensions();
     },
     stop: () => {
         if (approvalService) {
