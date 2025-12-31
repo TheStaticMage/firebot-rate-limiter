@@ -23,6 +23,5 @@ jobs:
         run: npm install
       - name: Run ESLint
         run: npx eslint src/ --max-warnings 0
-      - name: Linelint
-        uses: fernandrone/linelint@master
-        id: linelint
+      - name: Check final newline
+        run: .github/workflows/scripts/check-newline.sh
