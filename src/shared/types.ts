@@ -80,6 +80,18 @@ export type GetBucketsAsArrayResponse = {
     errorMessage?: string; // Optional error message
 }
 
+export type InspectorBucketEntry = {
+    id: string;
+    name: string;
+    type: 'simple' | 'advanced';
+    dataEntryCount: number;
+}
+
+export type GetInspectorDataResponse = {
+    buckets: InspectorBucketEntry[];
+    errorMessage?: string; // Optional error message
+}
+
 export type LimitApprovedEventMetadata = {
     alwaysAllow: boolean; // Whether this approval was based on an "always" condition
     success: boolean; // Whether the success was actually true, not considering "always" condition

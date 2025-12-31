@@ -7,3 +7,15 @@ firebot-tab[name="buckets"] firebot-item-table {
     overflow-y: visible;
     height: auto;
 }
+
+firebot-tab[name="inspector"] firebot-item-table .btn-primary:has(.fa-plus-circle) {
+    display: none;
+}
+
+firebot-tab[name="inspector"] > div:first-child {
+    padding-left: 15px;
+}
+
+firebot-tab[name="inspector"] .fit-header {
+    display: none;
+}

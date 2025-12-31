@@ -1,5 +1,5 @@
 import { AngularJsComponent, AngularJsFactory, AngularJsPage, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
-import { Bucket, BucketDataObject, DeleteBucketResponse, GetBucketsResponse } from "../shared/types";
+import { Bucket, BucketDataObject, DeleteBucketResponse, GetBucketResponse, GetBucketsResponse, GetInspectorDataResponse } from "../shared/types";
 import { loadTemplate } from "./rate-limiter-template-loader";
 
 function rateLimiterServiceFunction(backendCommunicator: any): any {
@@ -7,6 +7,10 @@ function rateLimiterServiceFunction(backendCommunicator: any): any {
 
     service.deleteBucket = (bucketId: string): DeleteBucketResponse => {
         return backendCommunicator.fireEventSync("rate-limiter:deleteBucket", { bucketId });
+    };
+
+    service.getBucket = (bucketId: string): GetBucketResponse => {
+        return backendCommunicator.fireEventSync("rate-limiter:getBucket", { bucketId });
     };
 
     service.getBuckets = (): GetBucketsResponse => {
@@ -20,6 +24,10 @@ function rateLimiterServiceFunction(backendCommunicator: any): any {
     service.saveBucket = (bucketId: string, bucket: Bucket): GetBucketsResponse => {
         const data = { ...bucket, name: bucket.name.trim() };
         return backendCommunicator.fireEventSync("rate-limiter:saveBucket", { bucketId: bucketId, bucket: data });
+    };
+
+    service.getInspectorData = (): GetInspectorDataResponse => {
+        return backendCommunicator.fireEventSync("rate-limiter:getInspectorData", {});
     };
 
     return service;
@@ -279,6 +287,67 @@ const rateLimiterPage: AngularJsPage = {
             ];
         };
 
+        $scope.inspectorBuckets = [];
+
+        $scope.inspectorHeaders = [
+            {
+                name: "BUCKET NAME",
+                icon: "fa-bucket",
+                dataField: "name",
+                sortable: true,
+                cellTemplate: `
+                    <div>{{ data.name }}</div>
+                `
+            },
+            {
+                name: "TYPE",
+                icon: "fa-tag",
+                headerStyles: {
+                    'width': '120px'
+                },
+                dataField: "type",
+                sortable: true,
+                cellTemplate: `
+                    <div>{{ data.type }}</div>
+                `
+            },
+            {
+                name: "DATA ENTRIES",
+                icon: "fa-list",
+                headerStyles: {
+                    'width': '140px'
+                },
+                dataField: "dataEntryCount",
+                sortable: true,
+                cellTemplate: `
+                    <div>{{ data.dataEntryCount }}</div>
+                `
+            }
+        ];
+
+        $scope.inspectorMenuOptions = (item: any) => {
+            return [
+                {
+                    html: `<a href><i class="far fa-database" style="margin-right: 10px;"></i> Inspect Bucket</a>`,
+                    click: function () {
+                        $scope.bucketDataEditorButton(item.id);
+                    }
+                }
+            ];
+        };
+
+        $scope.loadInspectorData = () => {
+            const response = rateLimiterService.getInspectorData();
+            if (response.errorMessage) {
+                ngToast.create({
+                    className: 'danger',
+                    content: `Error loading inspector data: ${response.errorMessage}`
+                });
+                return;
+            }
+            $scope.inspectorBuckets = response.buckets;
+        };
+
         $scope.setBucketDataField = (formattedData: string) => {
             // Force update both scope and DOM element
             $scope.bucketData = formattedData;
@@ -310,13 +379,17 @@ const rateLimiterPage: AngularJsPage = {
         };
 
         $scope.bucketDataEditorButton = (bucketId: string) => {
-            const bucket = $scope.bucketMap[bucketId];
+            let bucket = $scope.bucketMap[bucketId];
             if (!bucket) {
-                ngToast.create({
-                    className: 'danger',
-                    content: `Error: Bucket not found: id=${bucketId}`
-                });
-                return;
+                const bucketResponse = rateLimiterService.getBucket(bucketId);
+                if (bucketResponse.errorMessage || !bucketResponse.bucket) {
+                    ngToast.create({
+                        className: 'danger',
+                        content: `Error: Bucket not found: id=${bucketId}`
+                    });
+                    return;
+                }
+                bucket = bucketResponse.bucket;
             }
 
             const bucketData = rateLimiterService.getBucketData(bucketId);
