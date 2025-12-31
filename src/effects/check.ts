@@ -12,6 +12,7 @@ type effectModel = {
     bucketType: 'simple' | 'advanced';
     bucketSize: number | string;
     bucketRate: number | string;
+    bucketName?: string;
     keyType: 'user' | 'global' | 'custom';
     key: string;
     tokens: number | string;
@@ -103,6 +104,9 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 <div class="form-group">
                     <firebot-input input-title="Refill Rate (tokens/sec)" model="effect.bucketRate" data-type="number" required />
                 </div>
+                <div class="form-group">
+                    <firebot-input input-title="Bucket Name (Optional)" model="effect.bucketName" placeholder-text="Give this bucket a friendly name" />
+                </div>
             </div>
 
             <div class="form-group" ng-if="effect.bucketType === 'advanced'">
@@ -184,6 +188,9 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         }
 
         if (effect.bucketType === 'simple') {
+            if (effect.bucketName && effect.bucketName.trim() !== "") {
+                return `${effect.bucketName} | ${effect.keyType.toLocaleUpperCase()} | ${effect.bucketSize} @ ${effect.bucketRate}/sec`;
+            }
             return `${effect.keyType.toLocaleUpperCase()} | ${effect.bucketSize} @ ${effect.bucketRate}/sec`;
         }
 
@@ -242,6 +249,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         $scope.effect.bucketType = $scope.effect.bucketType || "simple";
         $scope.effect.bucketSize = $scope.effect.bucketSize !== undefined ? $scope.effect.bucketSize : 10;
         $scope.effect.bucketRate = $scope.effect.bucketRate !== undefined ? $scope.effect.bucketRate : 1;
+        $scope.effect.bucketName = $scope.effect.bucketName || "";
 
         $scope.bucketType = $scope.effect.bucketType;
 
@@ -325,6 +333,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             bucketId: effect.bucketType === 'advanced' ? effect.bucketId : effect.id,
             bucketSize: bucketSizeValue,
             bucketRate: bucketRateValue,
+            bucketName: effect.bucketName,
             key: bucketKey,
             tokenRequest: Number(effect.tokens),
             inquiry: effect.inquiry === true,

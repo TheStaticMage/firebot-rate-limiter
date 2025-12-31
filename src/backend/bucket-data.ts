@@ -1,6 +1,6 @@
 import { FrontendCommunicator } from '@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator';
 import { firebot, logger } from '../main';
-import { Bucket, BucketDataEntry, BucketDataObject, CheckRateLimitRequest, CheckRateLimitResponse, GetBucketDataResponse, InstantiateBucketParameters, RejectReason, SaveBucketDataResponse } from '../shared/types';
+import { Bucket, BucketDataEntry, BucketDataObject, CheckRateLimitRequest, CheckRateLimitResponse, GetBucketDataResponse, GetInspectorDataResponse, InspectorBucketEntry, InstantiateBucketParameters, RejectReason, SaveBucketDataResponse } from '../shared/types';
 import { bucketService, BucketService } from './bucket-service';
 import { getDataFilePath } from './util';
 
@@ -42,6 +42,11 @@ export class BucketData {
             return this.handleSaveBucketDataEvent(data);
         });
         logger.debug("Registered rate-limiter:saveBucketData frontend communicator handler.");
+
+        this.frontendCommunicator.on("rate-limiter:getInspectorData", (): GetInspectorDataResponse => {
+            return this.handleGetInspectorDataEvent();
+        });
+        logger.debug("Registered rate-limiter:getInspectorData frontend communicator handler.");
     }
 
     private handleGetBucketDataEvent(data: { bucketId: string }): GetBucketDataResponse {
@@ -55,6 +60,40 @@ export class BucketData {
         const bData = this.refreshTokensForBucket(bucketId, bucket);
         logger.debug(`rate-limiter:getBucketData: Retrieved bucket data for bucket ID: ${bucketId} (${Object.keys(bData).length} keys)`);
         return { bucketData: bData };
+    }
+
+    private handleGetInspectorDataEvent(): GetInspectorDataResponse {
+        const allBuckets = this.bucketService.getBuckets();
+        const inspectorBuckets: InspectorBucketEntry[] = [];
+
+        for (const [bucketId, bucket] of Object.entries(allBuckets)) {
+            this.refreshTokensForBucket(bucketId, bucket);
+            const bucketDataObj = this.bucketData[bucketId];
+            if (bucketDataObj && Object.keys(bucketDataObj).length > 0) {
+                inspectorBuckets.push({
+                    id: bucketId,
+                    name: bucket.name,
+                    type: bucket.type,
+                    dataEntryCount: Object.keys(bucketDataObj).length
+                });
+            }
+        }
+
+        inspectorBuckets.sort((a, b) => {
+            const aIsNamed = a.name !== a.id;
+            const bIsNamed = b.name !== b.id;
+
+            if (aIsNamed && !bIsNamed) {
+                return -1;
+            }
+            if (!aIsNamed && bIsNamed) {
+                return 1;
+            }
+
+            return a.name.localeCompare(b.name);
+        });
+        logger.debug(`rate-limiter:getInspectorData: Retrieved ${inspectorBuckets.length} buckets with data`);
+        return { buckets: inspectorBuckets };
     }
 
     private handleSaveBucketDataEvent(data: { bucketId: string, bucketData: string, dryRun: boolean }): SaveBucketDataResponse {
@@ -126,7 +165,8 @@ export class BucketData {
         if (request.bucketType === 'simple') {
             instantiateBucketParameters = {
                 bucketSize: request.bucketSize,
-                bucketRate: request.bucketRate
+                bucketRate: request.bucketRate,
+                bucketName: request.bucketName
             };
         }
 

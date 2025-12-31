@@ -12,6 +12,21 @@
         >
         </firebot-item-table>
     </firebot-tab>
+    <firebot-tab name="inspector" label="Inspector" on-activate="loadInspectorData()">
+        <div style="margin-top: 10px; margin-bottom: 10px;">
+            <button class="btn btn-primary" ng-click="loadInspectorData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <firebot-item-table
+            items="inspectorBuckets"
+            headers="inspectorHeaders"
+            context-menu-options="inspectorMenuOptions(item)"
+            no-data-message="No buckets with data found."
+            none-found-message="No buckets with data found."
+        >
+        </firebot-item-table>
+    </firebot-tab>
 </firebot-tabs>
 <div class="modal-body" ng-if="displayDeleteConfirmation">
     <rate-limiter-delete-confirmation
