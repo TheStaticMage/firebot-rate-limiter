@@ -12,6 +12,7 @@ Some of the things you can use this rate limiter to help with include:
 This script supplies the following:
 
 - The `Rate Limiter: Check Request` effect, which is available for all events and effect lists. This is capable of stopping the effect list and/or setting effect outputs so you can take action.
+- The `Rate Limiter: Undo Check` effect, which allows you to reverse a rate limit check within 10 minutes
 - The `Rate Limit Exceeded` event, so you can run effects when rate limits are exceeded (this is optional and intended for advanced users)
 - The ability to configure shared rate limiter buckets that are accessible from multiple effects
 
@@ -34,6 +35,7 @@ The [tutorial](/doc/tutorial.md) implements the "cookies and marbles" example in
 - [Installation](/doc/installation.md)
 - [Upgrading](/doc/upgrading.md)
 - [Tutorial](/doc/tutorial.md)
+- [Undoing Rate Limit Checks](/doc/undo.md)
 
 ## Installation
 

@@ -1,6 +1,7 @@
 import { Firebot, RunRequest } from '@crowbartools/firebot-custom-scripts-types';
 import { Logger } from '@crowbartools/firebot-custom-scripts-types/types/modules/logger';
-import { initializeBucketData } from './backend/bucket-data';
+import { ApprovalService } from './backend/approval-service';
+import { bucketData, initializeBucketData } from './backend/bucket-data';
 import { bucketService, initializeBucketService } from './backend/bucket-service';
 import { registerEffects } from './effects';
 import { registerEventSource } from './events';
@@ -11,7 +12,17 @@ import { registerReplaceVariables } from './variables';
 
 export let firebot: RunRequest<any>;
 export let logger: Logger;
+export let approvalService: ApprovalService;
 let uiExtensionDisplayed: boolean;
+
+function initializeApprovalService(): void {
+    if (!approvalService) {
+        approvalService = new ApprovalService(bucketService, bucketData);
+        logger.debug("ApprovalService initialized.");
+    } else {
+        logger.debug("ApprovalService already initialized.");
+    }
+}
 
 const scriptVersion = '0.1.1';
 
@@ -79,6 +90,7 @@ const script: Firebot.CustomScript<ScriptSettings> = {
         logger.info(`Starting Rate Limiter v${scriptVersion} on Firebot v${firebotVersion}`);
         initializeBucketService();
         initializeBucketData();
+        initializeApprovalService();
         registerEffects();
         registerEventSource();
         registerFilters();
@@ -90,6 +102,12 @@ const script: Firebot.CustomScript<ScriptSettings> = {
             uiExtensionDisplayed = true;
             bucketService.setAdvancedBucketsEnabled(settings.advancedBuckets);
         }
+    },
+    stop: () => {
+        if (approvalService) {
+            approvalService.shutdown();
+        }
+        logger.info('Rate Limiter stopped');
     }
 };
 

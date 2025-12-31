@@ -9,6 +9,9 @@ export default tseslint.config(
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylistic,
     {
+        ignores: ['coverage/**', 'dist/**', 'scripts/**', '*.config.js', '*.config.mjs'],
+    },
+    {
         files: ['**/*.ts', '**/*.tsx'],
         languageOptions: {
             parserOptions: {

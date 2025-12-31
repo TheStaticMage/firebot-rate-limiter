@@ -12,7 +12,8 @@
         "copy": "node ./scripts/copy-build.js",
         "prepare": "",
         "test": "jest --coverage",
-        "jest": "jest --coverage"
+        "jest": "jest --coverage",
+        "lint": "eslint ."
     },
     "author": "thestaticmage",
     "license": "GNU3",
