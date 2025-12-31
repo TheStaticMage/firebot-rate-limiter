@@ -1,5 +1,6 @@
 import { AngularJsComponent, AngularJsFactory, AngularJsPage, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
 import { Bucket, BucketDataObject, DeleteBucketResponse, GetBucketsResponse } from "../shared/types";
+import { loadTemplate } from "./rate-limiter-template-loader";
 
 function rateLimiterServiceFunction(backendCommunicator: any): any {
     const service: any = {};
@@ -164,71 +165,7 @@ const rateLimiterPage: AngularJsPage = {
     name: "Rate Limiter",
     icon: "fa-stopwatch",
     type: "angularjs",
-    template: `
-        <div class="modal-body">
-            <eos-container header="Buckets">
-                <p class="help-text">Create at least one bucket for each action that you want to limit.</p>
-                <p class="help-text">You can name the buckets whatever you want. You can rename them or change their parameters at any time.</p>
-
-                <div class="list-group" style="margin-bottom: 0;">
-                    <div class="list-group-item flex-row-center jspacebetween" ng-repeat="bucket in buckets track by bucket.id">
-                        <div>
-                            <h4 class="list-group-item-heading">{{bucket.name}}</h4>
-                            <p class="list-group-item-text muted">
-                                <span ng-if="bucket.persistBucket">Persisted,</span>
-                                Start Tokens: {{bucket.startTokens}},
-                                Max Tokens: {{bucket.maxTokens}},
-                                Refill Rate: {{bucket.refillRate}},
-                                Lifetime Max: {{bucket.lifetimeMaxTokens}}
-                            </p>
-                        </div>
-                        <div style="font-size:17px">
-                            <button class="btn btn-default" style="margin-right: 10px" ng-click="bucketDataEditorButton(bucket.id)">View/Edit Bucket Data</button>
-                            <button class="btn btn-default" style="margin-right: 10px" ng-click="addOrEditBucketButton(bucket.id)">Configure Bucket</button>
-                            <span uib-tooltip="Remove Bucket" tooltip-append-to-body="true" class="clickable" style="color:red;" ng-click="removeBucketButton(bucket.id)">
-                                <i class="fas fa-trash-alt"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button type="button" class="btn btn-primary pull-left" ng-click="addOrEditBucketButton()">Add New Bucket</button>
-                </div>
-            </eos-container>
-        </div>
-        <div class="modal-body" ng-if="displayDeleteConfirmation">
-            <rate-limiter-delete-confirmation
-                bucket-id="bucketId"
-                bucket-name="bucketName"
-                delete-button="deleteButton(bucketId)"
-                cancel-button="cancelButton()" />
-        </div>
-        <div class="modal-body" ng-if="displayAddOrEditBucket">
-            <rate-limiter-add-or-edit-bucket
-                bucket-id="bucketId"
-                bucket-name="bucketName"
-                bucket-start-tokens="bucketStartTokens"
-                bucket-max-tokens="bucketMaxTokens"
-                bucket-refill-rate="bucketRefillRate"
-                bucket-fill-from-start="bucketFillFromStart"
-                bucket-lifetime-max-tokens="bucketLifetimeMaxTokens"
-                bucket-lifetime-max-tokens-value="bucketLifetimeMaxTokensValue"
-                persist-bucket="persistBucket"
-                fill-bucket-across-restarts="fillBucketAcrossRestarts"
-                save-button="saveButton(bucketId, bucketName, bucketStartTokens, bucketMaxTokens, bucketRefillRate, bucketFillFromStart, bucketLifetimeMaxTokens, bucketLifetimeMaxTokensValue, persistBucket, fillBucketAcrossRestarts)"
-                cancel-button="cancelButton()" />
-        </div>
-        <div class="modal-body" ng-if="displayEditBucketData">
-            <rate-limiter-edit-bucket-data
-                bucket-id="bucketId"
-                bucket-name="bucketName"
-                bucket-data="bucketData"
-                text-error="textError"
-                close-button="cancelButton()"
-                format-data-button="formatDataButton(bucketData)"
-                save-data-button="saveDataButton(bucketId, bucketData)" />
-        </div>
-    `,
+    template: loadTemplate(),
     controller: ($scope: any, backendCommunicator: any, rateLimiterService: any, ngToast: any) => {
         $scope.bucketId = "";
         $scope.bucketMap = {} as Record<string, Bucket>;
@@ -236,6 +173,111 @@ const rateLimiterPage: AngularJsPage = {
         $scope.buckets = [];
         $scope.bucketData = "{}";
         $scope.textError = "";
+
+        $scope.bucketHeaders = [
+            {
+                name: "BUCKET NAME",
+                icon: "fa-bucket",
+                dataField: "name",
+                sortable: true,
+                cellTemplate: `
+                    <div>{{ data.name }}</div>
+                `
+            },
+            {
+                name: "START TOKENS",
+                icon: "fa-play",
+                headerStyles: {
+                    'width': '120px'
+                },
+                dataField: "startTokens",
+                sortable: true,
+                cellTemplate: `
+                    <div>{{ data.startTokens }}</div>
+                `
+            },
+            {
+                name: "MAX TOKENS",
+                icon: "fa-arrow-up",
+                headerStyles: {
+                    'width': '120px'
+                },
+                dataField: "maxTokens",
+                sortable: true,
+                cellTemplate: `
+                    <div>{{ data.maxTokens }}</div>
+                `
+            },
+            {
+                name: "REFILL RATE",
+                icon: "fa-tachometer-alt",
+                headerStyles: {
+                    'width': '120px'
+                },
+                dataField: "refillRate",
+                sortable: true,
+                cellTemplate: `
+                    <div>{{ data.refillRate }}/sec</div>
+                `
+            },
+            {
+                name: "PERSISTENT",
+                icon: "fa-save",
+                headerStyles: {
+                    'width': '100px'
+                },
+                dataField: "persistBucket",
+                sortable: true,
+                cellTemplate: `
+                    <div>
+                        <span ng-if="data.persistBucket" style="color: #53fc18;">
+                            <i class="fas fa-check"></i> Yes
+                        </span>
+                        <span ng-if="!data.persistBucket" class="muted">
+                            <i class="fas fa-times"></i> No
+                        </span>
+                    </div>
+                `
+            },
+            {
+                name: "LIFETIME MAX",
+                icon: "fa-infinity",
+                headerStyles: {
+                    'width': '120px'
+                },
+                dataField: "lifetimeMaxTokensValue",
+                sortable: true,
+                cellTemplate: `
+                    <div>
+                        <span ng-if="data.lifetimeMaxTokens">{{ data.lifetimeMaxTokensValue }}</span>
+                        <span ng-if="!data.lifetimeMaxTokens" class="muted">Unlimited</span>
+                    </div>
+                `
+            }
+        ];
+
+        $scope.bucketMenuOptions = (item: any) => {
+            return [
+                {
+                    html: `<a href><i class="far fa-cog" style="margin-right: 10px;"></i> Configure Bucket</a>`,
+                    click: function () {
+                        $scope.addOrEditBucketButton(item.id);
+                    }
+                },
+                {
+                    html: `<a href><i class="far fa-database" style="margin-right: 10px;"></i> Inspect Bucket</a>`,
+                    click: function () {
+                        $scope.bucketDataEditorButton(item.id);
+                    }
+                },
+                {
+                    html: `<a href style="color: #fb7373;"><i class="far fa-trash-alt" style="margin-right: 10px;"></i> Delete Bucket</a>`,
+                    click: function () {
+                        $scope.removeBucketButton(item.id);
+                    }
+                }
+            ];
+        };
 
         $scope.setBucketDataField = (formattedData: string) => {
             // Force update both scope and DOM element
