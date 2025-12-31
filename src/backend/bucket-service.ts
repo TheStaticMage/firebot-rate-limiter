@@ -106,7 +106,7 @@ export class BucketService {
         // Instantiate a new bucket if it doesn't exist for bucket type 'simple'
         if (params) {
             this.buckets[bucketId] = {
-                name: bucketId,
+                name: params.bucketName || bucketId,
                 type: 'simple',
                 maxTokens: params.bucketSize,
                 refillRate: params.bucketRate,

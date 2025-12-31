@@ -48,6 +48,7 @@ export type CheckRateLimitRequest = {
     bucketId: string;
     bucketSize: number; // Only used for simple buckets
     bucketRate: number; // Only used for simple buckets
+    bucketName?: string; // Only used for simple buckets
     key: string;
     tokenRequest: number;
     inquiry: boolean;
@@ -58,6 +59,7 @@ export type CheckRateLimitRequest = {
 export type InstantiateBucketParameters = {
     bucketSize: number;
     bucketRate: number;
+    bucketName?: string;
 }
 
 export type DeleteBucketResponse = {

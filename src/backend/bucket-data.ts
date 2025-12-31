@@ -79,7 +79,19 @@ export class BucketData {
             }
         }
 
-        inspectorBuckets.sort((a, b) => a.name.localeCompare(b.name));
+        inspectorBuckets.sort((a, b) => {
+            const aIsNamed = a.name !== a.id;
+            const bIsNamed = b.name !== b.id;
+
+            if (aIsNamed && !bIsNamed) {
+                return -1;
+            }
+            if (!aIsNamed && bIsNamed) {
+                return 1;
+            }
+
+            return a.name.localeCompare(b.name);
+        });
         logger.debug(`rate-limiter:getInspectorData: Retrieved ${inspectorBuckets.length} buckets with data`);
         return { buckets: inspectorBuckets };
     }
@@ -153,7 +165,8 @@ export class BucketData {
         if (request.bucketType === 'simple') {
             instantiateBucketParameters = {
                 bucketSize: request.bucketSize,
-                bucketRate: request.bucketRate
+                bucketRate: request.bucketRate,
+                bucketName: request.bucketName
             };
         }
 
