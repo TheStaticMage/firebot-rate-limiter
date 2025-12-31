@@ -1,6 +1,7 @@
 import { expect, jest } from '@jest/globals';
 import { BucketData } from '../backend/bucket-data';
 import { BucketService } from '../backend/bucket-service';
+import { CheckRateLimitRequest } from '../shared/types';
 import { checkEffect } from './check';
 
 // Mock the logger to avoid actual logging during tests
@@ -171,6 +172,144 @@ describe('checkEffect.onTriggerEvent', () => {
             expect(result.outputs?.rateLimitAllowed).toBe('false');
             expect(result.execution?.stop).toBe(true);
             expect(result.outputs?.rateLimitRejectReason).toBe('rate_limit');
+        }
+    });
+
+    it('should reject request when bucket size is invalid', async () => {
+        const effect = {
+            id: 'test-effect',
+            bucketId: 'test-bucket-id',
+            bucketType: 'simple' as const,
+            bucketSize: 0,
+            bucketRate: 1,
+            keyType: 'user' as const,
+            key: '',
+            tokens: 1,
+            inquiry: false,
+            enforceStreamer: true,
+            enforceBot: true,
+            rejectReward: false,
+            stopExecution: true,
+            stopExecutionBubble: false,
+            triggerEvent: false,
+            triggerApproveEvent: false,
+            rateLimitMetadata: '',
+            invocationLimit: false,
+            invocationLimitValue: 0
+        };
+
+        const trigger = {
+            type: 'command' as const,
+            metadata: {
+                username: 'testuser'
+            }
+        };
+
+        const result = await checkEffect.onTriggerEvent({
+            effect,
+            trigger,
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            sendDataToOverlay: () => {},
+            abortSignal: new AbortController().signal
+        });
+
+        expect(result).toBeTruthy();
+        if (result && typeof result === 'object' && 'outputs' in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe('false');
+            expect(result.outputs?.rateLimitRejectReason).toBe('error');
+            expect(result.outputs?.rateLimitErrorMessage).toContain('Bucket Size');
+        }
+    });
+
+    it('should reject request when bucket rate is invalid', async () => {
+        const effect = {
+            id: 'test-effect',
+            bucketId: 'test-bucket-id',
+            bucketType: 'simple' as const,
+            bucketSize: 10,
+            bucketRate: -1,
+            keyType: 'user' as const,
+            key: '',
+            tokens: 1,
+            inquiry: false,
+            enforceStreamer: true,
+            enforceBot: true,
+            rejectReward: false,
+            stopExecution: true,
+            stopExecutionBubble: false,
+            triggerEvent: false,
+            triggerApproveEvent: false,
+            rateLimitMetadata: '',
+            invocationLimit: false,
+            invocationLimitValue: 0
+        };
+
+        const trigger = {
+            type: 'command' as const,
+            metadata: {
+                username: 'testuser'
+            }
+        };
+
+        const result = await checkEffect.onTriggerEvent({
+            effect,
+            trigger,
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            sendDataToOverlay: () => {},
+            abortSignal: new AbortController().signal
+        });
+
+        expect(result).toBeTruthy();
+        if (result && typeof result === 'object' && 'outputs' in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe('false');
+            expect(result.outputs?.rateLimitRejectReason).toBe('error');
+            expect(result.outputs?.rateLimitErrorMessage).toContain('Refill Rate');
+        }
+    });
+
+    it('should clamp negative invocation limit values in the request', async () => {
+        const effect = {
+            id: 'test-effect',
+            bucketId: 'test-bucket-id',
+            bucketType: 'simple' as const,
+            bucketSize: 10,
+            bucketRate: 1,
+            keyType: 'user' as const,
+            key: '',
+            tokens: 1,
+            inquiry: false,
+            enforceStreamer: true,
+            enforceBot: true,
+            rejectReward: false,
+            stopExecution: false,
+            stopExecutionBubble: false,
+            triggerEvent: false,
+            triggerApproveEvent: false,
+            rateLimitMetadata: '',
+            invocationLimit: true,
+            invocationLimitValue: -3
+        };
+
+        const trigger = {
+            type: 'command' as const,
+            metadata: {
+                username: 'testuser'
+            }
+        };
+
+        const result = await checkEffect.onTriggerEvent({
+            effect,
+            trigger,
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            sendDataToOverlay: () => {},
+            abortSignal: new AbortController().signal
+        });
+
+        expect(result).toBeTruthy();
+        if (result && typeof result === 'object' && 'outputs' in result) {
+            const rawRequest = (result.outputs as any)?.rateLimitRawObject?.request as CheckRateLimitRequest;
+            expect(rawRequest?.invocationLimitValue).toBe(0);
+            expect(result.outputs?.rateLimitMaxAllowedInvocations).toBe(0);
         }
     });
 

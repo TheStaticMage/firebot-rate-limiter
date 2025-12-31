@@ -101,8 +101,16 @@ export class BucketService {
     }
 
     getBucket(bucketId: string, params: InstantiateBucketParameters | null = null): Bucket | undefined {
-        if (this.buckets[bucketId]) {
-            return this.buckets[bucketId];
+        const existingBucket = this.buckets[bucketId];
+
+        if (existingBucket) {
+            // Warn if simple bucket parameters don't match the request
+            if (params && existingBucket.type === 'simple') {
+                if (existingBucket.maxTokens !== params.bucketSize || existingBucket.refillRate !== params.bucketRate) {
+                    logger.warn(`Simple bucket parameter mismatch: id=${bucketId} bucket.maxTokens=${existingBucket.maxTokens} requested.bucketSize=${params.bucketSize} bucket.refillRate=${existingBucket.refillRate} requested.bucketRate=${params.bucketRate}`);
+                }
+            }
+            return existingBucket;
         }
 
         // Instantiate a new bucket if it doesn't exist for bucket type 'simple'

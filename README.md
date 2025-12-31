@@ -193,3 +193,7 @@ If you use this on your stream, I would appreciate a shout-out. (Appreciated, bu
 ### How is this different from cooldowns or maximum usage counts?
 
 Cooldowns and maximum usage counts are special cases of rate limits and can be modeled by this rate limiter if you want to. The rate limiter allows more flexibility (as noted in the [Examples](#examples)) that goes beyond the basic cooldowns and maximum usage counts supported by Twitch and Firebot. However, if you can do everything you need with functionality that is natively present in Firebot, then you should do so!
+
+### Can I change the bucket size or refill rate after I've created a simple bucket?
+
+No. Once a simple bucket has been created (by running an effect that uses it), the bucket parameters (size and refill rate) are fixed and cannot be changed, even if you modify the effect settings. If you need to change these parameters on the fly, use an advanced bucket instead. Advanced buckets are defined in the RATE LIMITER settings and can be edited at any time. You can also restart Firebot or duplicate the "Check Request" effect, both of which will effectively clear any data in the bucket.
