@@ -11,6 +11,9 @@ jest.mock('../main', () => ({
         info: jest.fn(),
         warn: jest.fn()
     },
+    approvalService: {
+        recordApproval: jest.fn()
+    },
     firebot: {
         firebot: {
             accounts: {
@@ -486,5 +489,343 @@ describe('checkEffect.onTriggerEvent', () => {
             expect(result.outputs?.rateLimitRawObject).toHaveProperty('request');
             expect(result.outputs?.rateLimitRawObject).toHaveProperty('response');
         }
+    });
+
+    describe('Approval ID functionality', () => {
+        let mockApprovalService: jest.MockedFunction<any>;
+
+        beforeEach(() => {
+            const main = require('../main');
+            mockApprovalService = main.approvalService;
+        });
+
+        it('should generate approval ID on successful check', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 10,
+                bucketRate: 1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 5,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'outputs' in result) {
+                const outputs = result.outputs as any;
+                expect(outputs.rateLimitApprovalId).toBeDefined();
+                expect(typeof outputs.rateLimitApprovalId).toBe('string');
+                expect(outputs.rateLimitApprovalId.length).toBeGreaterThan(0);
+            }
+        });
+
+        it('should generate UUIDv4 format approval ID', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 10,
+                bucketRate: 1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 5,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'outputs' in result) {
+                const outputs = result.outputs as any;
+                const approvalId = outputs.rateLimitApprovalId;
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                expect(approvalId).toMatch(uuidRegex);
+            }
+        });
+
+        it('should record approval in approval service', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 10,
+                bucketRate: 1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 5,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(mockApprovalService.recordApproval).toHaveBeenCalledWith(
+                expect.any(String),
+                'test-effect',
+                'user:testuser',
+                5,
+                1
+            );
+        });
+
+        it('should record inquiry check with zero tokens consumed', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 10,
+                bucketRate: 1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 5,
+                inquiry: true,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(mockApprovalService.recordApproval).toHaveBeenCalledWith(
+                expect.any(String),
+                'test-effect',
+                'user:testuser',
+                0,
+                0
+            );
+        });
+
+        it('should include approval ID in approved event metadata', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 10,
+                bucketRate: 1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 5,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: true,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(mockEmitEvent).toHaveBeenCalledWith('approved', expect.objectContaining({
+                approvalId: expect.any(String)
+            }), false);
+        });
+
+        it('should generate unique approval IDs for different checks', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 100,
+                bucketRate: 10,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 1,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result1 = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            const result2 = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            if (result1 && typeof result1 === 'object' && 'outputs' in result1 &&
+                result2 && typeof result2 === 'object' && 'outputs' in result2) {
+                expect(result1.outputs?.rateLimitApprovalId).not.toBe(result2.outputs?.rateLimitApprovalId);
+            }
+        });
+
+        it('should not generate approval ID for failed check', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'outputs' in result) {
+                const outputs = result.outputs as any;
+                expect(outputs.rateLimitAllowed).toBe('false');
+                expect(outputs.rateLimitApprovalId).toBe('');
+            }
+        });
     });
 });

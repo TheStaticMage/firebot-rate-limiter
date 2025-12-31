@@ -90,6 +90,7 @@ export type LimitApprovedEventMetadata = {
     triggerMetadata: Record<string, any>; // Original event data that triggered the check
     triggerType: string; // Type of the original event source
     triggerUsername: string; // Username from the original event source if tracked
+    approvalId: string; // Unique approval ID that can be used to undo this check within 10 minutes
 }
 
 export type LimitExceededEventMetadata = {

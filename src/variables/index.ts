@@ -1,4 +1,5 @@
 import { firebot } from '../main';
+import { rateLimitApprovalId } from './approval-id';
 import { rateLimitErrorMessage } from './error-message';
 import { rateLimitInvocation } from './invocation';
 import { rateLimitInvocationLimit } from './invocation-limit';
@@ -15,6 +16,7 @@ import { rateLimitTriggerUsername } from './trigger-username';
 export function registerReplaceVariables() {
     const { replaceVariableManager } = firebot.modules;
 
+    replaceVariableManager.registerReplaceVariable(rateLimitApprovalId);
     replaceVariableManager.registerReplaceVariable(rateLimitErrorMessage);
     replaceVariableManager.registerReplaceVariable(rateLimitInvocation);
     replaceVariableManager.registerReplaceVariable(rateLimitInvocationLimit);

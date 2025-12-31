@@ -1,9 +1,10 @@
 import { Firebot } from '@crowbartools/firebot-custom-scripts-types';
 import { EffectScope } from '@crowbartools/firebot-custom-scripts-types/types/effects';
+import { randomUUID } from 'crypto';
 import { bucketData } from '../backend/bucket-data';
-import { firebot, logger } from '../main';
-import { CheckRateLimitRequest, LimitApprovedEventMetadata, LimitExceededEventMetadata } from '../shared/types';
 import { emitEvent } from '../events';
+import { approvalService, firebot, logger } from '../main';
+import { CheckRateLimitRequest, LimitApprovedEventMetadata, LimitExceededEventMetadata } from '../shared/types';
 
 type effectModel = {
     id: string; // Set by Firebot
@@ -75,6 +76,11 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 label: "Maximum Allowed Invocations",
                 description: "The maximum number of times this effect can be successfully invoked. This will be a number, or -1 if the maximum allowed invocations is not defined.",
                 defaultName: "rateLimitMaxAllowedInvocations"
+            },
+            {
+                label: "Approval ID",
+                description: "Unique identifier for this approval (can be used to undo the check)",
+                defaultName: "rateLimitApprovalId"
             }
         ]
     },
@@ -293,7 +299,8 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                     request: {},
                     response: {}
                 },
-                rateLimitMaxAllowedInvocations: effect.invocationLimit ? effect.invocationLimitValue : -1
+                rateLimitMaxAllowedInvocations: effect.invocationLimit ? effect.invocationLimitValue : -1,
+                rateLimitApprovalId: ""
             }
         };
 
@@ -355,6 +362,14 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             logger.debug(`Rate limit PASS: alwaysAllow=${alwaysAllow} success=${checkResult.success} bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry} next=${checkResult.next} remaining=${checkResult.remaining} invocation=${checkResult.invocation}`);
             result.outputs.rateLimitAllowed = "true";
 
+            const approvalId = randomUUID();
+            result.outputs.rateLimitApprovalId = approvalId;
+            logger.debug(`Generated approval ID: approvalId=${approvalId} bucketId=${request.bucketId} bucketKey=${bucketKey}`);
+
+            const tokensConsumed = request.inquiry ? 0 : effect.tokens;
+            const invocationIncremented = (checkResult.success && !request.inquiry) ? 1 : 0;
+            approvalService.recordApproval(approvalId, request.bucketId, bucketKey, tokensConsumed, invocationIncremented);
+
             if (effect.triggerApproveEvent) {
                 logger.debug(`Emitting 'approved' event: bucketId=${request.bucketId} username=${trigger.metadata.username}`);
                 const approvedMetadata: LimitApprovedEventMetadata = {
@@ -370,7 +385,8 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                         ? trigger.metadata.eventData.originalUsername
                         : (typeof trigger.metadata.eventData?.username === "string"
                             ? trigger.metadata.eventData.username
-                            : trigger.metadata.username)
+                            : trigger.metadata.username),
+                    approvalId: approvalId
                 };
                 emitEvent("approved", approvedMetadata, false);
             }
