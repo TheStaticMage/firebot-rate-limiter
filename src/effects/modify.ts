@@ -80,145 +80,139 @@ export const modifyBucketDataEffect: Firebot.EffectType<modifyEffectModel> = {
                 min-width: 0;
             }
         </style>
-        <div ng-if="advancedBucketsEnabled">
-            <eos-container header="Bucket" pad-top="true">
-                <div class="form-group">
-                    <firebot-searchable-select
-                        ng-model="effect.bucketId"
-                        placeholder="Select bucket"
-                        items="bucketOptions"
+        <eos-container header="Bucket" pad-top="true">
+            <div class="form-group">
+                <firebot-searchable-select
+                    ng-model="effect.bucketId"
+                    placeholder="Select bucket"
+                    items="bucketOptions"
+                />
+            </div>
+        </eos-container>
+
+        <eos-container header="Key" pad-top="true">
+            <firebot-radio-container>
+                <firebot-radio label="Global" model="effect.keyType" value="'global'" tooltip="This will modify the global entry in the bucket -- note that this does not modify any user keys" />
+                <firebot-radio label="All Users" model="effect.keyType" value="'allusers'" />
+                <firebot-radio label="One User" model="effect.keyType" value="'user'" />
+                <div class="form-group flex-row jspacebetween" ng-if="effect.keyType === 'user'">
+                    <firebot-input
+                        model="effect.userKey"
+                        input-title="Username"
+                        placeholder-text="Enter username"
                     />
                 </div>
-            </eos-container>
+                <firebot-radio label="Custom Key" model="effect.keyType" value="'custom'" />
+                <div class="form-group flex-row jspacebetween" ng-if="effect.keyType === 'custom'">
+                    <firebot-input
+                        model="effect.customKey"
+                        input-title="Custom Key"
+                        placeholder-text="Enter custom key"
+                    />
+                </div>
+                <firebot-radio label="All Keys" model="effect.keyType" value="'allkeys'" />
+            </firebot-radio-container>
+        </eos-container>
 
-            <eos-container header="Key" pad-top="true">
-                <firebot-radio-container>
-                    <firebot-radio label="Global" model="effect.keyType" value="'global'" tooltip="This will modify the global entry in the bucket -- note that this does not modify any user keys" />
-                    <firebot-radio label="All Users" model="effect.keyType" value="'allusers'" />
-                    <firebot-radio label="One User" model="effect.keyType" value="'user'" />
-                    <div class="form-group flex-row jspacebetween" ng-if="effect.keyType === 'user'">
-                        <firebot-input
-                            model="effect.userKey"
-                            input-title="Username"
-                            placeholder-text="Enter username"
-                        />
-                    </div>
-                    <firebot-radio label="Custom Key" model="effect.keyType" value="'custom'" />
-                    <div class="form-group flex-row jspacebetween" ng-if="effect.keyType === 'custom'">
-                        <firebot-input
-                            model="effect.customKey"
-                            input-title="Custom Key"
-                            placeholder-text="Enter custom key"
-                        />
-                    </div>
-                    <firebot-radio label="All Keys" model="effect.keyType" value="'allkeys'" />
-                </firebot-radio-container>
-            </eos-container>
-
-            <eos-container header="Modifications" pad-top="true">
-                <firebot-radio-container>
-                    <firebot-radio label="Delete" model="effect.action" value="'delete'" />
-                    <firebot-radio label="Modify" model="effect.action" value="'modify'" />
-                    <div style="margin-left: 30px;" ng-if="effect.action == 'modify'">
-                        <div class="bucket-modify-row form-group">
-                            <span class="bucket-modify-label">Current Tokens</span>
-                            <span class="bucket-modify-select">
-                                <firebot-select
-                                    options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
-                                    ng-init="currentTokenOperation = effect.currentTokenOperation"
-                                    selected="currentTokenOperation"
-                                    on-update="effect.currentTokenOperation = currentTokenOperation"
-                                    right-justify="true"
-                                    aria-label="Choose Operation"
-                                />
-                            </span>
-                            <span class="bucket-modify-input" ng-if="effect.currentTokenOperation == 'add' || effect.currentTokenOperation == 'set'">
-                                <firebot-input
-                                    model="effect.currentTokenValue"
-                                    input-title="Tokens"
-                                    placeholder-text="Enter number of tokens"
-                                    type="number"
-                                />
-                            </span>
-                        </div>
-                        <div class="bucket-modify-row form-group">
-                            <span class="bucket-modify-label">Lifetime Tokens</span>
-                            <span class="bucket-modify-select">
-                                <firebot-select
-                                    options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
-                                    ng-init="lifetimeTokenOperation = effect.lifetimeTokenOperation"
-                                    selected="lifetimeTokenOperation"
-                                    on-update="effect.lifetimeTokenOperation = lifetimeTokenOperation"
-                                    right-justify="true"
-                                    aria-label="Choose Operation"
-                                />
-                            </span>
-                            <span class="bucket-modify-input" ng-if="effect.lifetimeTokenOperation == 'add' || effect.lifetimeTokenOperation == 'set'">
-                                <firebot-input
-                                    model="effect.lifetimeTokenValue"
-                                    input-title="Tokens"
-                                    placeholder-text="Enter number of tokens"
-                                    type="number"
-                                />
-                            </span>
-                        </div>
-                        <div class="bucket-modify-row form-group">
-                            <span class="bucket-modify-label">Invocations</span>
-                            <span class="bucket-modify-select">
-                                <firebot-select
-                                    options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
-                                    ng-init="invocationOperation = effect.invocationOperation"
-                                    selected="invocationOperation"
-                                    on-update="effect.invocationOperation = invocationOperation"
-                                    right-justify="true"
-                                    aria-label="Choose Operation"
-                                />
-                            </span>
-                            <span class="bucket-modify-input" ng-if="effect.invocationOperation == 'add' || effect.invocationOperation == 'set'">
-                                <firebot-input
-                                    model="effect.invocationValue"
-                                    input-title="Tokens"
-                                    placeholder-text="Enter number of tokens"
-                                    type="number"
-                                />
-                            </span>
-                        </div>
-                        <div class="bucket-modify-row form-group">
-                            <span class="bucket-modify-label">Last Updated</span>
-                            <span class="bucket-modify-select">
-                                <firebot-select
-                                    options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
-                                    ng-init="lastUpdatedOperation = effect.lastUpdatedOperation"
-                                    selected="lastUpdatedOperation"
-                                    on-update="effect.lastUpdatedOperation = lastUpdatedOperation"
-                                    right-justify="true"
-                                    aria-label="Choose Operation"
-                                />
-                            </span>
-                            <span class="bucket-modify-input" ng-if="effect.lastUpdatedOperation == 'add' || effect.lastUpdatedOperation == 'set'">
-                                <firebot-input
-                                    model="effect.lastUpdatedValue"
-                                    input-title="Tokens"
-                                    placeholder-text="Enter number of tokens"
-                                    type="number"
-                                />
-                            </span>
-                        </div>
-                        <div class="form-group flex-row jspacebetween" ng-if="effect.keyType !== 'allkeys' && effect.keyType !== 'allusers'">
-                            <firebot-checkbox
-                                model="effect.createMissing"
-                                label="Create Missing Key"
-                                tooltip="If the key does not exist, create it with the specified values."
+        <eos-container header="Modifications" pad-top="true">
+            <firebot-radio-container>
+                <firebot-radio label="Delete" model="effect.action" value="'delete'" />
+                <firebot-radio label="Modify" model="effect.action" value="'modify'" />
+                <div style="margin-left: 30px;" ng-if="effect.action == 'modify'">
+                    <div class="bucket-modify-row form-group">
+                        <span class="bucket-modify-label">Current Tokens</span>
+                        <span class="bucket-modify-select">
+                            <firebot-select
+                                options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
+                                ng-init="currentTokenOperation = effect.currentTokenOperation"
+                                selected="currentTokenOperation"
+                                on-update="effect.currentTokenOperation = currentTokenOperation"
+                                right-justify="true"
+                                aria-label="Choose Operation"
                             />
-                        </div>
+                        </span>
+                        <span class="bucket-modify-input" ng-if="effect.currentTokenOperation == 'add' || effect.currentTokenOperation == 'set'">
+                            <firebot-input
+                                model="effect.currentTokenValue"
+                                input-title="Tokens"
+                                placeholder-text="Enter number of tokens"
+                                type="number"
+                            />
+                        </span>
                     </div>
-                </firebot-radio-container>
-            </eos-container>
-        </div>
-        <div ng-if="!advancedBucketsEnabled">
-            <p>This effect requires the advanced buckets feature to be enabled.</p>
-            <p>You can enable this under <strong>Settings &gt; Scripts &gt; Startup Scripts &gt; Rate Limiter</strong>.</p>
-        </div>
+                    <div class="bucket-modify-row form-group">
+                        <span class="bucket-modify-label">Lifetime Tokens</span>
+                        <span class="bucket-modify-select">
+                            <firebot-select
+                                options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
+                                ng-init="lifetimeTokenOperation = effect.lifetimeTokenOperation"
+                                selected="lifetimeTokenOperation"
+                                on-update="effect.lifetimeTokenOperation = lifetimeTokenOperation"
+                                right-justify="true"
+                                aria-label="Choose Operation"
+                            />
+                        </span>
+                        <span class="bucket-modify-input" ng-if="effect.lifetimeTokenOperation == 'add' || effect.lifetimeTokenOperation == 'set'">
+                            <firebot-input
+                                model="effect.lifetimeTokenValue"
+                                input-title="Tokens"
+                                placeholder-text="Enter number of tokens"
+                                type="number"
+                            />
+                        </span>
+                    </div>
+                    <div class="bucket-modify-row form-group">
+                        <span class="bucket-modify-label">Invocations</span>
+                        <span class="bucket-modify-select">
+                            <firebot-select
+                                options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
+                                ng-init="invocationOperation = effect.invocationOperation"
+                                selected="invocationOperation"
+                                on-update="effect.invocationOperation = invocationOperation"
+                                right-justify="true"
+                                aria-label="Choose Operation"
+                            />
+                        </span>
+                        <span class="bucket-modify-input" ng-if="effect.invocationOperation == 'add' || effect.invocationOperation == 'set'">
+                            <firebot-input
+                                model="effect.invocationValue"
+                                input-title="Tokens"
+                                placeholder-text="Enter number of tokens"
+                                type="number"
+                            />
+                        </span>
+                    </div>
+                    <div class="bucket-modify-row form-group">
+                        <span class="bucket-modify-label">Last Updated</span>
+                        <span class="bucket-modify-select">
+                            <firebot-select
+                                options="{ noChange: 'No Change', add: 'Add', set: 'Set' }"
+                                ng-init="lastUpdatedOperation = effect.lastUpdatedOperation"
+                                selected="lastUpdatedOperation"
+                                on-update="effect.lastUpdatedOperation = lastUpdatedOperation"
+                                right-justify="true"
+                                aria-label="Choose Operation"
+                            />
+                        </span>
+                        <span class="bucket-modify-input" ng-if="effect.lastUpdatedOperation == 'add' || effect.lastUpdatedOperation == 'set'">
+                            <firebot-input
+                                model="effect.lastUpdatedValue"
+                                input-title="Tokens"
+                                placeholder-text="Enter number of tokens"
+                                type="number"
+                            />
+                        </span>
+                    </div>
+                    <div class="form-group flex-row jspacebetween" ng-if="effect.keyType !== 'allkeys' && effect.keyType !== 'allusers'">
+                        <firebot-checkbox
+                            model="effect.createMissing"
+                            label="Create Missing Key"
+                            tooltip="If the key does not exist, create it with the specified values."
+                        />
+                    </div>
+                </div>
+            </firebot-radio-container>
+        </eos-container>
     `,
     getDefaultLabel: (effect: modifyEffectModel, backendCommunicator: any) => {
         if (!effect) {
@@ -264,8 +258,6 @@ export const modifyBucketDataEffect: Firebot.EffectType<modifyEffectModel> = {
         $scope.effect.invocationValue = $scope.effect.invocationValue || 0;
         $scope.effect.lastUpdatedOperation = $scope.effect.lastUpdatedOperation || "noChange";
         $scope.effect.lastUpdatedValue = $scope.effect.lastUpdatedValue || 0;
-
-        $scope.advancedBucketsEnabled = backendCommunicator.fireEventSync("rate-limiter:getAdvancedBucketsEnabled", {});
 
         const buckets = backendCommunicator.fireEventSync("rate-limiter:getBucketsAsArray", {});
         if (buckets.errorMessage) {
@@ -324,12 +316,6 @@ export function processTrigger(effect: modifyEffectModel, bucketData: BucketData
         rateLimitModifyBucketDataSuccess: "false", // These need to be strings
         rateLimitModifyBucketDataRawObject: bucketData.getAllBucketData(effect.bucketId)
     };
-
-    // This is only available if advanced buckets are enabled.
-    const advancedBucketsEnabled = bucketService.getAdvancedBucketsEnabled();
-    if (!advancedBucketsEnabled) {
-        throw new CriticalError(`Advanced buckets are not enabled, cannot modify bucket data (effect ID: ${effect.id}).`);
-    }
 
     // Get a list of keys to modify based on the effect's key type and any
     // other specified options.

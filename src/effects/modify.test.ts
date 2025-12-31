@@ -662,11 +662,6 @@ describe('processTrigger', () => {
         );
     });
 
-    it('throws if advanced buckets are not enabled', () => {
-        jest.spyOn(baseBucketService, 'getAdvancedBucketsEnabled').mockReturnValue(false);
-        expect(() => processTrigger(baseEffect, baseBucketData, baseBucketService)).toThrow(/Advanced buckets are not enabled/);
-    });
-
     it('throws if the bucket is not found', () => {
         jest.spyOn(baseBucketService, 'getBucket').mockReturnValue(undefined);
         expect(() => processTrigger(baseEffect, baseBucketData, baseBucketService)).toThrow(/Bucket not found/);

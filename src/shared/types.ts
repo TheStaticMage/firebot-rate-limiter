@@ -119,8 +119,8 @@ export type SaveBucketResponse = {
     errorMessage?: string; // Optional error message
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ScriptSettings {
-    advancedBuckets: boolean;
 }
 
 export enum RejectReason {

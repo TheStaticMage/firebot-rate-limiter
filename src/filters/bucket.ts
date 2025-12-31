@@ -22,11 +22,6 @@ export const bucketFilter: EventFilter = {
         return bucketResponse.bucket ? bucketResponse.bucket.name : "[Unknown]";
     },
     valueIsStillValid: (filterSettings: FilterSettings, backendCommunicator: any): boolean => {
-        const advancedBucketsEnabled = backendCommunicator.fireEventSync("rate-limiter:getAdvancedBucketsEnabled", {});
-        if (!advancedBucketsEnabled) {
-            return false;
-        }
-
         const bucketResponse: GetBucketResponse = backendCommunicator.fireEventSync("rate-limiter:getBucket", { bucketId: filterSettings.value });
         if (bucketResponse.errorMessage) {
             return false;
@@ -35,12 +30,6 @@ export const bucketFilter: EventFilter = {
         return !!bucketResponse.bucket;
     },
     presetValues: (backendCommunicator: any, ngToast: any): PresetValue[] => {
-        const advancedBucketsEnabled = backendCommunicator.fireEventSync("rate-limiter:getAdvancedBucketsEnabled", {});
-        if (!advancedBucketsEnabled) {
-            ngToast.create({className: 'danger', content: "This filter is not available because you have not enabled advanced buckets."});
-            return [];
-        }
-
         const bucketsResponse: GetBucketsAsArrayResponse = backendCommunicator.fireEventSync("rate-limiter:getBucketsAsArray", {});
         if (bucketsResponse.errorMessage) {
             ngToast.create({className: 'danger', content: `Error loading buckets: ${bucketsResponse.errorMessage}`});
@@ -65,13 +54,6 @@ export const bucketFilter: EventFilter = {
         const bucketId = typeof eventData.eventMeta?.bucketId === "string" ? eventData.eventMeta.bucketId : undefined;
         if (!bucketId || !filterSettings.value) {
             logger.warn("bucketFilter: Bucket ID or filter value is missing. Passing event.");
-            return true;
-        }
-
-        // If advanced buckets are disabled then always return true.
-        const advancedBucketsEnabled = bucketService.getAdvancedBucketsEnabled();
-        if (!advancedBucketsEnabled) {
-            logger.warn("bucketFilter: Advanced buckets are disabled. Passing event.");
             return true;
         }
 
