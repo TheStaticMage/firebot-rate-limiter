@@ -130,6 +130,43 @@ describe('BucketService', () => {
         }));
     });
 
+    it('should warn when simple bucket parameters do not match', () => {
+        const params1 = { bucketSize: 20, bucketRate: 2 };
+        const bucket1 = service.getBucket('simpleBucket', params1);
+        expect(bucket1?.maxTokens).toBe(20);
+        expect(bucket1?.refillRate).toBe(2);
+        expect(bucket1?.startTokens).toBe(20);
+
+        jest.clearAllMocks();
+
+        const params2 = { bucketSize: 50, bucketRate: 5 };
+        const bucket2 = service.getBucket('simpleBucket', params2);
+        expect(bucket2?.maxTokens).toBe(20);
+        expect(bucket2?.refillRate).toBe(2);
+        expect(bucket2?.startTokens).toBe(20);
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Simple bucket parameter mismatch'));
+    });
+
+    it('should not warn when simple bucket parameters match', () => {
+        const params = { bucketSize: 20, bucketRate: 2 };
+        service.getBucket('simpleBucket', params);
+        jest.clearAllMocks();
+
+        service.getBucket('simpleBucket', params);
+        expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining('Simple bucket parameter mismatch'));
+    });
+
+    it('should not warn for advanced buckets with mismatched parameters', () => {
+        const advBucket: Bucket = { ...bucket, name: 'Advanced', type: 'advanced', maxTokens: 30 };
+        service['saveBucket']('advBucket', advBucket);
+
+        const params = { bucketSize: 50, bucketRate: 5 };
+        const retrievedBucket = service.getBucket('advBucket', params);
+        expect(retrievedBucket?.maxTokens).toBe(30);
+        expect(retrievedBucket?.refillRate).toBe(1);
+        expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining('Simple bucket parameter mismatch'));
+    });
+
     it('should warn and return undefined for non-existent bucket without params', () => {
         const result = service.getBucket('notfound');
         expect(result).toBeUndefined();

@@ -4,17 +4,17 @@ import { randomUUID } from 'crypto';
 import { bucketData } from '../backend/bucket-data';
 import { emitEvent } from '../events';
 import { approvalService, firebot, logger } from '../main';
-import { CheckRateLimitRequest, LimitApprovedEventMetadata, LimitExceededEventMetadata } from '../shared/types';
+import { CheckRateLimitRequest, CheckRateLimitResponse, LimitApprovedEventMetadata, LimitExceededEventMetadata, RejectReason } from '../shared/types';
 
 type effectModel = {
     id: string; // Set by Firebot
     bucketId: string;
     bucketType: 'simple' | 'advanced';
-    bucketSize: number;
-    bucketRate: number;
+    bucketSize: number | string;
+    bucketRate: number | string;
     keyType: 'user' | 'global' | 'custom';
     key: string;
-    tokens: number;
+    tokens: number | string;
     inquiry: boolean;
     enforceStreamer: boolean;
     enforceBot: boolean;
@@ -25,7 +25,7 @@ type effectModel = {
     triggerApproveEvent: boolean;
     rateLimitMetadata: string;
     invocationLimit: boolean;
-    invocationLimitValue: number;
+    invocationLimitValue: number | string;
 }
 
 export const checkEffect: Firebot.EffectType<effectModel> = {
@@ -98,10 +98,10 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         <eos-container header="Bucket" pad-top="true">
             <div class="form-group" ng-if="effect.bucketType === 'simple'">
                 <div class="form-group">
-                    <firebot-input input-title="Bucket Size" model="effect.bucketSize" data-type="number" required disable-variables="true" />
+                    <firebot-input input-title="Bucket Size" model="effect.bucketSize" data-type="number" required />
                 </div>
                 <div class="form-group">
-                    <firebot-input input-title="Refill Rate (tokens/sec)" model="effect.bucketRate" data-type="number" required disable-variables="true" />
+                    <firebot-input input-title="Refill Rate (tokens/sec)" model="effect.bucketRate" data-type="number" required />
                 </div>
             </div>
 
@@ -198,11 +198,11 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
     optionsValidator: (effect: effectModel): string[] => {
         const errors: string[] = [];
         if (effect.bucketType === 'simple') {
-            if (isNaN(effect.bucketSize) || Number(effect.bucketSize) <= 0) {
-                errors.push(`Bucket Size must be a number greater than 0`);
+            if (effect.bucketSize === undefined || effect.bucketSize === null || String(effect.bucketSize).trim() === "") {
+                errors.push("Bucket Size is required");
             }
-            if (isNaN(effect.bucketRate) || Number(effect.bucketRate) < 0) {
-                errors.push(`Refill Rate must be greater than or equal to 0`);
+            if (effect.bucketRate === undefined || effect.bucketRate === null || String(effect.bucketRate).trim() === "") {
+                errors.push("Refill Rate is required");
             }
         } else {
             if (!effect.bucketId) {
@@ -215,11 +215,11 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         if (effect.keyType === "custom" && !effect.key) {
             errors.push("Custom Key is required");
         }
-        if (!effect.tokens) {
+        if (effect.tokens === undefined || effect.tokens === null || String(effect.tokens).trim() === "") {
             errors.push("Tokens must be specified");
         }
-        if (effect.invocationLimit && (isNaN(effect.invocationLimitValue) || effect.invocationLimitValue <= 0)) {
-            errors.push("Invocation Limit Value must be greater than 0");
+        if (effect.invocationLimit && (effect.invocationLimitValue === undefined || effect.invocationLimitValue === null || String(effect.invocationLimitValue).trim() === "")) {
+            errors.push("Invocation Limit Value is required");
         }
         return errors;
     },
@@ -282,6 +282,9 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
     onTriggerEvent: async (event) => {
         const { effect, trigger } = event;
 
+        const invocationLimitValue = Number(effect.invocationLimitValue);
+        const sanitizedInvocationLimitValue = Number.isFinite(invocationLimitValue) ? Math.max(0, invocationLimitValue) : 0;
+
         const result = {
             success: true,
             execution: {
@@ -299,7 +302,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                     request: {},
                     response: {}
                 },
-                rateLimitMaxAllowedInvocations: effect.invocationLimit ? effect.invocationLimitValue : -1,
+                rateLimitMaxAllowedInvocations: effect.invocationLimit ? sanitizedInvocationLimitValue : -1,
                 rateLimitApprovalId: ""
             }
         };
@@ -316,38 +319,62 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
 
         // There's a check in getBucketData that handles the case where the
         // bucket doesn't exist so we don't have to check that here.
+        const bucketSizeValue = Number(effect.bucketSize);
+        const bucketRateValue = Number(effect.bucketRate);
         const request: CheckRateLimitRequest = {
             bucketType: effect.bucketType,
             bucketId: effect.bucketType === 'advanced' ? effect.bucketId : effect.id,
-            bucketSize: Number(effect.bucketSize),
-            bucketRate: Number(effect.bucketRate),
+            bucketSize: bucketSizeValue,
+            bucketRate: bucketRateValue,
             key: bucketKey,
             tokenRequest: Number(effect.tokens),
             inquiry: effect.inquiry === true,
             invocationLimit: effect.invocationLimit === true,
-            invocationLimitValue: Number(effect.invocationLimitValue)
+            invocationLimitValue: sanitizedInvocationLimitValue
         };
 
+        const invalidBucketErrors: string[] = [];
+        if (effect.bucketType === 'simple') {
+            if (!Number.isFinite(bucketSizeValue) || bucketSizeValue <= 0) {
+                invalidBucketErrors.push("Bucket Size must be greater than 0");
+            }
+            if (!Number.isFinite(bucketRateValue) || bucketRateValue < 0) {
+                invalidBucketErrors.push("Refill Rate must be greater than or equal to 0");
+            }
+        }
+
         let alwaysAllow = false;
+        let checkResult: CheckRateLimitResponse;
 
-        // Don't bother checking rate limits for the streamer
-        if (!effect.enforceStreamer && trigger.metadata.username === firebot.firebot.accounts.streamer.username) {
-            logger.debug(`Rate limit IGNORE (streamer): bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry}`);
-            result.outputs.rateLimitAllowed = "true";
-            request.inquiry = true;
-            alwaysAllow = true;
+        if (invalidBucketErrors.length > 0) {
+            checkResult = {
+                success: false,
+                next: -1,
+                remaining: -1,
+                invocation: 0,
+                rejectReason: RejectReason.Error,
+                errorMessage: invalidBucketErrors.join(" ")
+            };
+        } else {
+            // Don't bother checking rate limits for the streamer
+            if (!effect.enforceStreamer && trigger.metadata.username === firebot.firebot.accounts.streamer.username) {
+                logger.debug(`Rate limit IGNORE (streamer): bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry}`);
+                result.outputs.rateLimitAllowed = "true";
+                request.inquiry = true;
+                alwaysAllow = true;
+            }
+
+            // Don't bother checking rate limits for the bot
+            if (!effect.enforceBot && trigger.metadata.username === firebot.firebot.accounts.bot.username) {
+                logger.debug(`Rate limit IGNORE (bot): bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry}`);
+                result.outputs.rateLimitAllowed = "true";
+                request.inquiry = true;
+                alwaysAllow = true;
+            }
+
+            // Set outputs based on the result of the check
+            checkResult = bucketData.check(request);
         }
-
-        // Don't bother checking rate limits for the bot
-        if (!effect.enforceBot && trigger.metadata.username === firebot.firebot.accounts.bot.username) {
-            logger.debug(`Rate limit IGNORE (bot): bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry}`);
-            result.outputs.rateLimitAllowed = "true";
-            request.inquiry = true;
-            alwaysAllow = true;
-        }
-
-        // Set outputs based on the result of the check
-        const checkResult = bucketData.check(request);
         result.outputs.rateLimitRawObject.request = request;
         result.outputs.rateLimitRawObject.response = checkResult;
         result.outputs.rateLimitAllowed = checkResult.success ? 'true' : 'false';
@@ -366,7 +393,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             result.outputs.rateLimitApprovalId = approvalId;
             logger.debug(`Generated approval ID: approvalId=${approvalId} bucketId=${request.bucketId} bucketKey=${bucketKey}`);
 
-            const tokensConsumed = request.inquiry ? 0 : effect.tokens;
+            const tokensConsumed = request.inquiry ? 0 : request.tokenRequest;
             const invocationIncremented = (checkResult.success && !request.inquiry) ? 1 : 0;
             approvalService.recordApproval(approvalId, request.bucketId, bucketKey, tokensConsumed, invocationIncremented);
 
@@ -416,7 +443,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 inquiry: effect.inquiry,
                 invocation: checkResult.invocation,
                 invocationLimit: effect.invocationLimit,
-                invocationLimitValue: effect.invocationLimitValue,
+                invocationLimitValue: sanitizedInvocationLimitValue,
                 bucketKey: bucketKey,
                 messageId: (trigger.metadata.chatMessage as any)?.id || "",
                 metadataKey: effect.rateLimitMetadata || "",
@@ -431,7 +458,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 rejectReason: checkResult.rejectReason,
                 remaining: checkResult.remaining,
                 stackDepth: stackDepth + 1,
-                tokens: effect.tokens,
+                tokens: request.tokenRequest,
                 username: trigger.metadata.username
             };
             emitEvent("limit-exceeded", eventMetadata, false);
