@@ -40,6 +40,9 @@ jest.mock('../main', () => ({
             frontendCommunicator: {
                 on: jest.fn(),
                 send: jest.fn()
+            },
+            effectRunner: {
+                processEffects: jest.fn()
             }
         }
     }
@@ -60,6 +63,7 @@ describe('checkEffect.onTriggerEvent', () => {
     let bucketService: BucketService;
     let mockTwitchApi: jest.MockedFunction<any>;
     let mockEmitEvent: jest.MockedFunction<any>;
+    let mockEffectRunner: jest.MockedFunction<any>;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -68,6 +72,7 @@ describe('checkEffect.onTriggerEvent', () => {
         const { firebot } = require('../main');
         mockTwitchApi = firebot.modules.twitchApi.channelRewards.approveOrRejectChannelRewardRedemption;
         mockEmitEvent = require('../events').emitEvent;
+        mockEffectRunner = firebot.modules.effectRunner.processEffects;
 
         // Create actual bucket service and data instances for testing
         bucketService = new BucketService();
@@ -964,6 +969,569 @@ describe('checkEffect.onTriggerEvent', () => {
                 const outputs = result.outputs as any;
                 expect(outputs.rateLimitAllowed).toBe('false');
                 expect(outputs.rateLimitApprovalId).toBe('');
+            }
+        });
+    });
+
+    describe('Failure effect list', () => {
+        it('should not execute failure effects when runOnFailure is disabled', async () => {
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: false,
+                failureEffectList: { list: [{ id: 'some-effect' }] }
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'outputs' in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe('false');
+            }
+            expect(mockEffectRunner).not.toHaveBeenCalled();
+        });
+
+        it('should execute failure effects when runOnFailure is enabled and limit exceeded', async () => {
+            const failureEffects = { list: [{ id: 'test-effect', type: 'some-type' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'outputs' in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe('false');
+            }
+            expect(mockEffectRunner).toHaveBeenCalledWith({
+                trigger: trigger,
+                effects: failureEffects,
+                outputs: expect.any(Object)
+            });
+        });
+
+        it('should execute failure effects before stop execution is returned', async () => {
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: true,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(mockEffectRunner).toHaveBeenCalled();
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'execution' in result) {
+                expect(result.execution?.stop).toBe(true);
+            }
+        });
+
+        it('should not execute failure effects when request is allowed', async () => {
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 100,
+                bucketRate: 10,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 1,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'outputs' in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe('true');
+            }
+            expect(mockEffectRunner).not.toHaveBeenCalled();
+        });
+
+        it('should handle errors in failure effect execution gracefully', async () => {
+            const { logger } = require('../main');
+            mockEffectRunner.mockRejectedValue(new Error('Effect failed'));
+
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'outputs' in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe('false');
+            }
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to execute failure effect list'));
+        });
+
+        it('should clone outputs when executing failure effects', async () => {
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const testEvent = {
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal,
+                outputs: {
+                    testOutput: 'value'
+                }
+            };
+
+            await checkEffect.onTriggerEvent(testEvent);
+
+            expect(mockEffectRunner).toHaveBeenCalled();
+            const callArg = mockEffectRunner.mock.calls[0][0];
+            expect(callArg.outputs).not.toBe(testEvent.outputs);
+            expect(callArg.outputs).toEqual(testEvent.outputs);
+        });
+
+        it('should set stop to true when failure effects request it', async () => {
+            mockEffectRunner.mockResolvedValue({
+                success: true,
+                stopEffectExecution: true,
+                outputs: {}
+            });
+
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'execution' in result) {
+                expect(result.execution?.stop).toBe(true);
+            }
+        });
+
+        it('should keep stop and bubbleStop false when failure effects do not request them', async () => {
+            mockEffectRunner.mockResolvedValue({
+                success: true,
+                stopEffectExecution: false,
+                outputs: {}
+            });
+
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'execution' in result) {
+                expect(result.execution?.stop).toBe(false);
+            }
+        });
+
+        it('should keep stop and bubbleStop true when rate limiter options are true', async () => {
+            mockEffectRunner.mockResolvedValue({
+                success: true,
+                stopEffectExecution: false,
+                outputs: {}
+            });
+
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: true,
+                stopExecutionBubble: true,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'execution' in result) {
+                expect(result.execution?.stop).toBe(true);
+                expect(result.execution?.bubbleStop).toBe(true);
+            }
+        });
+
+        it('should not propagate execution stop when stopEffectExecution is false', async () => {
+            mockEffectRunner.mockResolvedValue({
+                success: true,
+                stopEffectExecution: false,
+                outputs: {}
+            });
+
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'execution' in result) {
+                expect(result.execution?.stop).toBe(false);
+            }
+        });
+
+        it('should keep original values when failure effects return null (queued)', async () => {
+            mockEffectRunner.mockResolvedValue(null);
+
+            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const effect = {
+                id: 'test-effect',
+                bucketId: 'test-bucket-id',
+                bucketType: 'simple' as const,
+                bucketSize: 1,
+                bucketRate: 0.1,
+                keyType: 'user' as const,
+                key: '',
+                tokens: 10,
+                inquiry: false,
+                enforceStreamer: true,
+                enforceBot: true,
+                rejectReward: false,
+                stopExecution: false,
+                stopExecutionBubble: false,
+                triggerEvent: false,
+                triggerApproveEvent: false,
+                rateLimitMetadata: '',
+                invocationLimit: false,
+                invocationLimitValue: 0,
+                runOnFailure: true,
+                failureEffectList: failureEffects
+            };
+
+            const trigger = {
+                type: 'command' as const,
+                metadata: {
+                    username: 'testuser'
+                }
+            };
+
+            const result = await checkEffect.onTriggerEvent({
+                effect,
+                trigger,
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                sendDataToOverlay: () => {},
+                abortSignal: new AbortController().signal
+            });
+
+            expect(result).toBeTruthy();
+            if (result && typeof result === 'object' && 'execution' in result) {
+                expect(result.execution?.stop).toBe(false);
+                expect(result.execution?.bubbleStop).toBe(false);
             }
         });
     });
