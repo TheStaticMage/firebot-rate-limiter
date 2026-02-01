@@ -27,6 +27,10 @@ type effectModel = {
     rateLimitMetadata: string;
     invocationLimit: boolean;
     invocationLimitValue: number | string;
+    runOnFailure?: boolean;
+    failureEffectList?: {
+        list: any[];
+    };
 }
 
 export const checkEffect: Firebot.EffectType<effectModel> = {
@@ -153,7 +157,15 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 <firebot-checkbox model="effect.enforceStreamer" label="Enforce limit for streamer" />
                 <firebot-checkbox model="effect.enforceBot" label="Enforce limit for bot" />
                 <firebot-checkbox model="effect.rejectReward" label="Reject channel point reward if limit exceeded" />
-                <firebot-checkbox model="effect.stopExecution" label="Stop effect execution if limit exceeded" />
+                <firebot-checkbox model="effect.runOnFailure" label="Run effect list when rate limit is denied" />
+                <div style="margin-left: 10px" ng-if="effect.runOnFailure">
+                    <eos-container header="Effects to Run on Failure">
+                        <effect-list effects="effect.failureEffectList" update="failureEffectListUpdated(effects)"></effect-list>
+                    </eos-container>
+                </div>
+                <div style="margin-top: 8px">
+                    <firebot-checkbox model="effect.stopExecution" label="Stop effect execution if limit exceeded" />
+                </div>
                 <div style="margin-left: 10px" ng-if="effect.stopExecution">
                     <firebot-checkbox model="effect.stopExecutionBubble" label="Bubble the stop effect execution request to all parent effect lists" />
                 </div>
@@ -228,6 +240,12 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         if (effect.invocationLimit && (effect.invocationLimitValue === undefined || effect.invocationLimitValue === null || String(effect.invocationLimitValue).trim() === "")) {
             errors.push("Invocation Limit Value is required");
         }
+        if (effect.runOnFailure) {
+            const failureEffectCount = effect.failureEffectList?.list?.length ?? 0;
+            if (failureEffectCount === 0) {
+                errors.push("Please add at least one effect to the failure effect list.");
+            }
+        }
         return errors;
     },
     optionsController: ($scope: EffectScope<effectModel>, backendCommunicator: any, ngToast: any) => {
@@ -250,6 +268,12 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         $scope.effect.bucketSize = $scope.effect.bucketSize !== undefined ? $scope.effect.bucketSize : 10;
         $scope.effect.bucketRate = $scope.effect.bucketRate !== undefined ? $scope.effect.bucketRate : 1;
         $scope.effect.bucketName = $scope.effect.bucketName || "";
+        $scope.effect.runOnFailure = $scope.effect.runOnFailure === true;
+        $scope.effect.failureEffectList = $scope.effect.failureEffectList || { list: [] };
+
+        $scope.failureEffectListUpdated = function(effects: any) {
+            $scope.effect.failureEffectList = effects;
+        };
 
         $scope.bucketType = $scope.effect.bucketType;
 
@@ -433,6 +457,41 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         // We may stop execution
         result.execution.stop = effect.stopExecution;
         result.execution.bubbleStop = effect.stopExecutionBubble;
+
+        // Execute failure effects if enabled
+        if (effect.runOnFailure && effect.failureEffectList && effect.failureEffectList.list.length > 0) {
+            logger.debug(`Executing failure effect list: bucketId=${request.bucketId} effectCount=${effect.failureEffectList.list.length}`);
+
+            const { outputs = {} } = event ?? {};
+            let clonedOutputs: any;
+            try {
+                clonedOutputs = typeof structuredClone === 'function'
+                    ? structuredClone(outputs)
+                    : JSON.parse(JSON.stringify(outputs));
+            } catch (cloneError) {
+                logger.warn(`Failed to clone outputs for failure effect list: ${String(cloneError)}. Using original outputs.`);
+                clonedOutputs = outputs;
+            }
+
+            try {
+                const effectListResult = await firebot.modules.effectRunner.processEffects({
+                    trigger: event.trigger,
+                    effects: effect.failureEffectList,
+                    outputs: clonedOutputs
+                } as any);
+
+                // Merge execution settings from failure effects
+                if (effectListResult != null) {
+                    const resultAny = effectListResult as any;
+                    if (resultAny.stopEffectExecution === true) {
+                        logger.debug(`Failure effect list requested to stop execution: bucketId=${request.bucketId}`);
+                        result.execution.stop = true;
+                    }
+                }
+            } catch (error) {
+                logger.error(`Failed to execute failure effect list: ${String(error)}`);
+            }
+        }
 
         // "Rate Limit Exceeded" event
         if (effect.triggerEvent) {
