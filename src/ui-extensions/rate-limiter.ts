@@ -1,5 +1,5 @@
-import { AngularJsComponent, AngularJsFactory, AngularJsPage, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
-import { Bucket, BucketDataObject, DeleteBucketResponse, GetBucketResponse, GetBucketsResponse, GetInspectorDataResponse } from "../shared/types";
+import type { AngularJsComponent, AngularJsFactory, AngularJsPage, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
+import type { Bucket, BucketDataObject, DeleteBucketResponse, GetBucketResponse, GetBucketsResponse, GetInspectorDataResponse } from "../shared/types";
 import { loadTemplate } from "./rate-limiter-template-loader";
 
 function rateLimiterServiceFunction(backendCommunicator: any): any {
@@ -65,19 +65,19 @@ const rateLimiterAddOrEditBucket: AngularJsComponent = {
                     <firebot-input input-title="Bucket Name" model="$ctrl.bucketName" required disable-variables="true" />
                 </div>
                 <div class="form-group">
-                    <firebot-input input-title="Start Tokens" model="$ctrl.bucketStartTokens" data-type="number" required disable-variables="true" tooltip="The number of tokens to start with in the bucket at the time that bucket is first used." />
+                    <firebot-input input-title="Start Tokens" model="$ctrl.bucketStartTokens" data-type="number" required tooltip="The number of tokens to start with in the bucket at the time that bucket is first used." />
                 </div>
                 <div class="form-group">
-                    <firebot-input input-title="Max Tokens" model="$ctrl.bucketMaxTokens" data-type="number" required disable-variables="true" tooltip="The maximum number of tokens the bucket can hold. It will not be replenished beyond this point." />
+                    <firebot-input input-title="Max Tokens" model="$ctrl.bucketMaxTokens" data-type="number" required tooltip="The maximum number of tokens the bucket can hold. It will not be replenished beyond this point." />
                 </div>
                 <div class="form-group">
-                    <firebot-input input-title="Refill Rate (tokens/sec)" model="$ctrl.bucketRefillRate" data-type="number" required disable-variables="true" tooltip="This value does not have to be an integer. It can be a decimal number (e.g. 0.5) if desired." />
+                    <firebot-input input-title="Refill Rate (tokens/sec)" model="$ctrl.bucketRefillRate" data-type="number" required tooltip="This value does not have to be an integer. It can be a decimal number (e.g. 0.5) if desired." />
                 </div>
                 <div class="form-group">
                     <firebot-checkbox label="Lifetime Max Tokens" model="$ctrl.bucketLifetimeMaxTokens" tooltip="If checked, this will limit the total number of tokens that can be generated for this bucket." />
                 </div>
                 <div class="form-group" ng-if="$ctrl.bucketLifetimeMaxTokens">
-                    <firebot-input input-title="Lifetime Max Tokens" model="$ctrl.bucketLifetimeMaxTokensValue" data-type="number" required disable-variables="true" />
+                    <firebot-input input-title="Lifetime Max Tokens" model="$ctrl.bucketLifetimeMaxTokensValue" data-type="number" required />
                 </div>
                 <div class="form-group">
                     <firebot-checkbox label="Fill from Firebot startup" model="$ctrl.bucketFillFromStart" tooltip="If checked, token replenishment will occur from the start of the stream (when Firebot is opened). This is different from the default behavior, where token replenishment begins after the first request." />
