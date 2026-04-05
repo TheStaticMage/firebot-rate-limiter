@@ -1,11 +1,10 @@
-import { Firebot } from '@crowbartools/firebot-custom-scripts-types';
-import { EffectScope } from '@crowbartools/firebot-custom-scripts-types/types/effects';
-import { approvalService, logger } from '../main';
+import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import { EffectScope } from "@crowbartools/firebot-custom-scripts-types/types/effects";
+import { approvalService, logger } from "../main";
 
 type undoEffectModel = {
     approvalId: string;
-}
-
+};
 
 export const undoEffect: Firebot.EffectType<undoEffectModel> = {
     definition: {

@@ -21,7 +21,7 @@ jobs:
           node-version: '22.x'
       - name: npm install
         run: npm install
-      - name: Run ESLint
-        run: npx eslint src/ --max-warnings 0
+      - name: Run Biome
+        run: npx biome check src/ --error-on-warnings
       - name: Check final newline
         run: .github/workflows/scripts/check-newline.sh

@@ -1,14 +1,14 @@
-import { Firebot, RunRequest } from '@crowbartools/firebot-custom-scripts-types';
-import { Logger } from '@crowbartools/firebot-custom-scripts-types/types/modules/logger';
-import { ApprovalService } from './backend/approval-service';
-import { bucketData, initializeBucketData } from './backend/bucket-data';
-import { bucketService, initializeBucketService } from './backend/bucket-service';
-import { registerEffects } from './effects';
-import { registerEventSource } from './events';
-import { registerFilters } from './filters';
-import { ScriptSettings } from './shared/types';
-import { registerUIExtensions } from './ui-extensions';
-import { registerReplaceVariables } from './variables';
+import { Firebot, RunRequest } from "@crowbartools/firebot-custom-scripts-types";
+import { Logger } from "@crowbartools/firebot-custom-scripts-types/types/modules/logger";
+import { ApprovalService } from "./backend/approval-service";
+import { bucketData, initializeBucketData } from "./backend/bucket-data";
+import { bucketService, initializeBucketService } from "./backend/bucket-service";
+import { registerEffects } from "./effects";
+import { registerEventSource } from "./events";
+import { registerFilters } from "./filters";
+import { ScriptSettings } from "./shared/types";
+import { registerUIExtensions } from "./ui-extensions";
+import { registerReplaceVariables } from "./variables";
 
 export let firebot: RunRequest<any>;
 export let logger: Logger;
@@ -23,17 +23,17 @@ function initializeApprovalService(): void {
     }
 }
 
-const scriptVersion = '0.2.0';
+const scriptVersion = "0.2.0";
 
 const script: Firebot.CustomScript<ScriptSettings> = {
     getScriptManifest: () => {
         return {
-            name: 'Rate Limiter',
-            description: 'A basic Firebot custom script for rate limiting actions.',
-            author: 'The Static Mage',
+            name: "Rate Limiter",
+            description: "A basic Firebot custom script for rate limiting actions.",
+            author: "The Static Mage",
             version: scriptVersion,
             startupOnly: true,
-            firebotVersion: '5'
+            firebotVersion: "5"
         };
     },
     getDefaultParameters: () => {
@@ -49,9 +49,9 @@ const script: Firebot.CustomScript<ScriptSettings> = {
         }
 
         const firebotVersion = runRequest.firebot.version;
-        const firebotParts = firebotVersion.split('.');
+        const firebotParts = firebotVersion.split(".");
         const majorVersion = parseInt(firebotParts[0], 10);
-        const minorVersion = parseInt(firebotParts[1] || '0', 10);
+        const minorVersion = parseInt(firebotParts[1] || "0", 10);
         if (isNaN(majorVersion) || isNaN(minorVersion) || majorVersion < 5 || (majorVersion === 5 && minorVersion < 65)) {
             const { frontendCommunicator } = runRequest.modules;
             frontendCommunicator.send("error", `The installed version of Firebot Rate Limiter requires Firebot 5.65 or later. You are running Firebot ${firebotVersion}. Please update Firebot to use this plugin.`);
@@ -72,7 +72,7 @@ const script: Firebot.CustomScript<ScriptSettings> = {
         if (approvalService) {
             approvalService.shutdown();
         }
-        logger.info('Rate Limiter stopped');
+        logger.info("Rate Limiter stopped");
     }
 };
 

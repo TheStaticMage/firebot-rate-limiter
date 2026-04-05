@@ -32,24 +32,21 @@ export const bucketFilter: EventFilter = {
     presetValues: (backendCommunicator: any, ngToast: any): PresetValue[] => {
         const bucketsResponse: GetBucketsAsArrayResponse = backendCommunicator.fireEventSync("rate-limiter:getBucketsAsArray", {});
         if (bucketsResponse.errorMessage) {
-            ngToast.create({className: 'danger', content: `Error loading buckets: ${bucketsResponse.errorMessage}`});
+            ngToast.create({ className: "danger", content: `Error loading buckets: ${bucketsResponse.errorMessage}` });
             return [];
         }
 
         if (bucketsResponse.buckets.length === 0) {
-            ngToast.create({className: 'danger', content: "No buckets found. Create some in the 'RATE LIMITER' screen."});
+            ngToast.create({ className: "danger", content: "No buckets found. Create some in the 'RATE LIMITER' screen." });
             return [];
         }
 
-        return bucketsResponse.buckets.map(bucket => ({
+        return bucketsResponse.buckets.map((bucket) => ({
             value: bucket.id,
             display: bucket.name
         }));
     },
-    predicate: async (
-        filterSettings,
-        eventData: EventData
-    ): Promise<boolean> => {
+    predicate: async (filterSettings, eventData: EventData): Promise<boolean> => {
         // If the bucket data is unknown then always return true.
         const bucketId = typeof eventData.eventMeta?.bucketId === "string" ? eventData.eventMeta.bucketId : undefined;
         if (!bucketId || !filterSettings.value) {
@@ -65,7 +62,7 @@ export const bucketFilter: EventFilter = {
         }
 
         // True if bucketId matches value and comparisonType is "is", or if they don't match and comparisonType is "is not"
-        const result = ((bucketId === String(filterSettings.value)) === (filterSettings.comparisonType === "is"));
+        const result = (bucketId === String(filterSettings.value)) === (filterSettings.comparisonType === "is");
         logger.debug(`bucketFilter: result=${result} bucketId=${bucketId} filterValue=${filterSettings.value} comparisonType=${filterSettings.comparisonType}`);
         return result;
     }

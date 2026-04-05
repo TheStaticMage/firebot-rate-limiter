@@ -1,7 +1,7 @@
-import { Bucket, BucketDataEntry, CheckRateLimitRequest, RejectReason } from '../shared/types';
-import { BucketData } from './bucket-data';
+import { Bucket, BucketDataEntry, CheckRateLimitRequest, RejectReason } from "../shared/types";
+import { BucketData } from "./bucket-data";
 
-jest.mock('../main', () => ({
+jest.mock("../main", () => ({
     firebot: {
         modules: {
             fs: {
@@ -22,7 +22,7 @@ jest.mock('../main', () => ({
     }
 }));
 
-jest.mock('./bucket-service', () => {
+jest.mock("./bucket-service", () => {
     const buckets: Record<string, any> = {};
     return {
         bucketService: {
@@ -36,18 +36,18 @@ jest.mock('./bucket-service', () => {
     };
 });
 
-jest.mock('./util', () => ({
-    getDataFilePath: jest.fn(() => '/tmp/test-bucket-data.json')
+jest.mock("./util", () => ({
+    getDataFilePath: jest.fn(() => "/tmp/test-bucket-data.json")
 }));
 
-describe('BucketData', () => {
-    const bucketId = 'bucket1';
-    const key = 'user1';
+describe("BucketData", () => {
+    const bucketId = "bucket1";
+    const key = "user1";
     const now = Date.now();
 
     const bucket: Bucket = {
-        name: 'bucket1',
-        type: 'simple',
+        name: "bucket1",
+        type: "simple",
         maxTokens: 10,
         refillRate: 1,
         startTokens: 5,
@@ -59,11 +59,11 @@ describe('BucketData', () => {
     };
 
     // Use the mocked bucketService from require, not the imported one
-    const mockedBucketService = require('./bucket-service').bucketService;
+    const mockedBucketService = require("./bucket-service").bucketService;
     beforeEach(() => {
         jest.useFakeTimers().setSystemTime(now);
-        (require('../main').firebot.modules.fs.existsSync as jest.Mock).mockReturnValue(false);
-        (require('../main').firebot.modules.fs.readFileSync as jest.Mock).mockReturnValue('{}');
+        (require("../main").firebot.modules.fs.existsSync as jest.Mock).mockReturnValue(false);
+        (require("../main").firebot.modules.fs.readFileSync as jest.Mock).mockReturnValue("{}");
         mockedBucketService.__setBuckets({
             [bucketId]: bucket
         });
@@ -74,19 +74,19 @@ describe('BucketData', () => {
         jest.useRealTimers();
     });
 
-    describe('parseFileData', () => {
+    describe("parseFileData", () => {
         // Test-only subclass to expose private parseFileData
         class TestableBucketData extends BucketData {
             public parseFileDataPublic(data: string) {
-            // @ts-expect-error: access private method for testing
+                // @ts-expect-error: access private method for testing
                 return this.parseFileData(data);
             }
         }
 
-        it('should correctly parse file data with and without fillBucketAcrossRestarts', () => {
+        it("should correctly parse file data with and without fillBucketAcrossRestarts", () => {
             // Mock getBucket to return buckets with and without fillBucketAcrossRestarts
-            const testBucketId1 = 'bucket1';
-            const testBucketId2 = 'bucket2';
+            const testBucketId1 = "bucket1";
+            const testBucketId2 = "bucket2";
             const entry = {
                 tokenCount: 5,
                 lifetimeTokenCount: 5,
@@ -111,11 +111,11 @@ describe('BucketData', () => {
         });
     });
 
-    describe('addTokens', () => {
-        it('should not exceed lifetimeMaxTokens when adding tokens', () => {
+    describe("addTokens", () => {
+        it("should not exceed lifetimeMaxTokens when adding tokens", () => {
             const lifetimeBucket: Bucket = {
-                name: 'lifetime',
-                type: 'simple',
+                name: "lifetime",
+                type: "simple",
                 maxTokens: 10,
                 refillRate: 100, // high refill rate to test cap
                 startTokens: 5,
@@ -130,19 +130,19 @@ describe('BucketData', () => {
             });
             const bucketData = new BucketData();
             // First addTokens should set lifetimeTokenCount to 5
-            let entry = bucketData.addTokens('lifetime', lifetimeBucket, key);
+            let entry = bucketData.addTokens("lifetime", lifetimeBucket, key);
             expect(entry.lifetimeTokenCount).toBe(5);
             // Simulate time passing to try to add more tokens
             jest.setSystemTime(now + 10000); // 10 seconds
-            entry = bucketData.addTokens('lifetime', lifetimeBucket, key);
+            entry = bucketData.addTokens("lifetime", lifetimeBucket, key);
             // Should not exceed lifetimeMaxTokensValue (7)
             expect(entry.lifetimeTokenCount).toBeLessThanOrEqual(7);
         });
 
-        it('should initialize with fillFromStart tokens', () => {
+        it("should initialize with fillFromStart tokens", () => {
             const fillBucket: Bucket = {
-                name: 'fill',
-                type: 'simple',
+                name: "fill",
+                type: "simple",
                 maxTokens: 20,
                 refillRate: 2, // 2 tokens/sec
                 startTokens: 0,
@@ -162,31 +162,31 @@ describe('BucketData', () => {
             const bucketData = new BucketData(fiveSecondsAgo);
             // The first addTokens should initialize with fillTokens = refillRate * (now - startTime) / 1000
             // But since startTokens is 0, should be 2 * 5 = 10 tokens
-            const entry = bucketData.addTokens('fill', fillBucket, key);
+            const entry = bucketData.addTokens("fill", fillBucket, key);
             expect(entry.tokenCount).toBe(10);
             expect(entry.lifetimeTokenCount).toBe(10);
         });
 
-        it('should initialize and load empty data', () => {
+        it("should initialize and load empty data", () => {
             const bucketData = new BucketData();
             expect(bucketData.getAllBucketData(bucketId)).toEqual({});
         });
 
-        it('should add tokens and update bucket data', () => {
+        it("should add tokens and update bucket data", () => {
             const bucketData = new BucketData();
             const entry = bucketData.addTokens(bucketId, bucket, key);
             expect(entry.tokenCount).toBe(bucket.startTokens);
             expect(entry.lifetimeTokenCount).toBe(bucket.startTokens);
             expect(entry.invocationCount).toBe(0);
-            expect(typeof entry.lastUpdated).toBe('number');
+            expect(typeof entry.lastUpdated).toBe("number");
         });
     });
 
-    describe('check', () => {
-        it('should check and allow if enough tokens', () => {
+    describe("check", () => {
+        it("should check and allow if enough tokens", () => {
             const request: CheckRateLimitRequest = {
                 bucketId,
-                bucketType: 'simple',
+                bucketType: "simple",
                 key,
                 tokenRequest: 2,
                 inquiry: false,
@@ -202,11 +202,11 @@ describe('BucketData', () => {
             expect(res.invocation).toBe(1);
         });
 
-        it('should check and reject if not enough tokens', () => {
+        it("should check and reject if not enough tokens", () => {
             // Use up all tokens
             const request: CheckRateLimitRequest = {
                 bucketId,
-                bucketType: 'simple',
+                bucketType: "simple",
                 key,
                 tokenRequest: 10,
                 inquiry: false,
@@ -221,14 +221,14 @@ describe('BucketData', () => {
             const res = bucketData.check(request);
             expect(res.success).toBe(false);
             expect(res.rejectReason).toBe(RejectReason.RateLimit);
-            expect(typeof res.next).toBe('number');
+            expect(typeof res.next).toBe("number");
             expect(res.errorMessage).toMatch(/Insufficient tokens/);
         });
 
-        it('should check and reject if invocation limit reached', () => {
+        it("should check and reject if invocation limit reached", () => {
             const request: CheckRateLimitRequest = {
                 bucketId,
-                bucketType: 'simple',
+                bucketType: "simple",
                 key,
                 tokenRequest: 1,
                 inquiry: false,
@@ -246,10 +246,10 @@ describe('BucketData', () => {
             expect(res.errorMessage).toMatch(/Invocation limit reached/);
         });
 
-        it('should handle missing bucket in check gracefully', () => {
+        it("should handle missing bucket in check gracefully", () => {
             const request: CheckRateLimitRequest = {
-                bucketId: 'notfound',
-                bucketType: 'simple',
+                bucketId: "notfound",
+                bucketType: "simple",
                 key,
                 tokenRequest: 1,
                 inquiry: false,
@@ -265,30 +265,30 @@ describe('BucketData', () => {
         });
     });
 
-    describe('deleteKey', () => {
-        it('should delete a key', () => {
+    describe("deleteKey", () => {
+        it("should delete a key", () => {
             const bucketData = new BucketData();
             bucketData.addTokens(bucketId, bucket, key);
             expect(bucketData.deleteKey(bucketId, key)).toBe(true);
             expect(bucketData.hasKey(bucketId, key)).toBe(false);
         });
 
-        it('should return false when deleting non-existent key', () => {
+        it("should return false when deleting non-existent key", () => {
             const bucketData = new BucketData();
-            expect(bucketData.deleteKey(bucketId, 'notfound')).toBe(false);
+            expect(bucketData.deleteKey(bucketId, "notfound")).toBe(false);
         });
     });
 
-    describe('listKeys', () => {
-        it('should list keys', () => {
+    describe("listKeys", () => {
+        it("should list keys", () => {
             const bucketData = new BucketData();
             bucketData.addTokens(bucketId, bucket, key);
             expect(bucketData.listKeys(bucketId)).toContain(key);
         });
     });
 
-    describe('setKey', () => {
-        it('should set key data', () => {
+    describe("setKey", () => {
+        it("should set key data", () => {
             const bucketData = new BucketData();
             bucketData.addTokens(bucketId, bucket, key);
             const newData: BucketDataEntry = {
@@ -301,10 +301,10 @@ describe('BucketData', () => {
             expect(bucketData.getAllBucketData(bucketId)[key]).toEqual(newData);
         });
 
-        it('should not set key for non-existent bucket', () => {
-            const spy = jest.spyOn(require('../main').logger, 'error');
+        it("should not set key for non-existent bucket", () => {
+            const spy = jest.spyOn(require("../main").logger, "error");
             const bucketData = new BucketData();
-            bucketData.setKey('notfound', key, {
+            bucketData.setKey("notfound", key, {
                 tokenCount: 1,
                 lifetimeTokenCount: 1,
                 lastUpdated: now,
@@ -314,11 +314,11 @@ describe('BucketData', () => {
         });
     });
 
-    describe('getPersistentBucketData', () => {
-        it('should persist only buckets with persistBucket=true', () => {
+    describe("getPersistentBucketData", () => {
+        it("should persist only buckets with persistBucket=true", () => {
             const bucket2: Bucket = {
-                name: 'bucket2',
-                type: 'simple',
+                name: "bucket2",
+                type: "simple",
                 maxTokens: 10,
                 refillRate: 1,
                 startTokens: 5,
@@ -334,13 +334,13 @@ describe('BucketData', () => {
             });
             const bucketData = new BucketData();
             bucketData.addTokens(bucketId, bucket, key);
-            bucketData.addTokens('bucket2', bucket2, 'key2');
+            bucketData.addTokens("bucket2", bucket2, "key2");
             const persistent = (bucketData as any).getPersistentBucketData();
             expect(Object.keys(persistent)).toContain(bucketId);
-            expect(Object.keys(persistent)).not.toContain('bucket2');
+            expect(Object.keys(persistent)).not.toContain("bucket2");
         });
 
-        describe('handleSaveBucketDataEvent', () => {
+        describe("handleSaveBucketDataEvent", () => {
             let bucketData: BucketData;
             let testBucketData: any;
 
@@ -365,7 +365,7 @@ describe('BucketData', () => {
                 };
             });
 
-            it('should successfully save valid bucket data', () => {
+            it("should successfully save valid bucket data", () => {
                 const result = (bucketData as any).handleSaveBucketDataEvent({
                     bucketId,
                     bucketData: JSON.stringify(testBucketData),
@@ -377,7 +377,7 @@ describe('BucketData', () => {
                 expect(bucketData.getAllBucketData(bucketId)).toEqual(testBucketData);
             });
 
-            it('should validate without saving in dry run mode', () => {
+            it("should validate without saving in dry run mode", () => {
                 const result = (bucketData as any).handleSaveBucketDataEvent({
                     bucketId,
                     bucketData: JSON.stringify(testBucketData),
@@ -389,29 +389,29 @@ describe('BucketData', () => {
                 expect(bucketData.getAllBucketData(bucketId)).toEqual({});
             });
 
-            it('should return error for non-existent bucket', () => {
+            it("should return error for non-existent bucket", () => {
                 const result = (bucketData as any).handleSaveBucketDataEvent({
-                    bucketId: 'nonexistent',
+                    bucketId: "nonexistent",
                     bucketData: JSON.stringify(testBucketData),
                     dryRun: false
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('No bucket found');
+                expect(result.errorMessage).toContain("No bucket found");
             });
 
-            it('should return error for invalid JSON', () => {
+            it("should return error for invalid JSON", () => {
                 const result = (bucketData as any).handleSaveBucketDataEvent({
                     bucketId,
-                    bucketData: 'invalid json {',
+                    bucketData: "invalid json {",
                     dryRun: false
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('Invalid JSON');
+                expect(result.errorMessage).toContain("Invalid JSON");
             });
 
-            it('should return error for non-object bucket data', () => {
+            it("should return error for non-object bucket data", () => {
                 const result = (bucketData as any).handleSaveBucketDataEvent({
                     bucketId,
                     bucketData: '"string value"',
@@ -419,21 +419,21 @@ describe('BucketData', () => {
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('expected object but got string');
+                expect(result.errorMessage).toContain("expected object but got string");
             });
 
-            it('should return error for array bucket data', () => {
+            it("should return error for array bucket data", () => {
                 const result = (bucketData as any).handleSaveBucketDataEvent({
                     bucketId,
-                    bucketData: '[1, 2, 3]',
+                    bucketData: "[1, 2, 3]",
                     dryRun: false
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('expected object but got object');
+                expect(result.errorMessage).toContain("expected object but got object");
             });
 
-            it('should return error for entry with missing tokenCount', () => {
+            it("should return error for entry with missing tokenCount", () => {
                 const invalidData = {
                     user1: {
                         lifetimeTokenCount: 10,
@@ -449,17 +449,17 @@ describe('BucketData', () => {
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('Invalid bucketData for user1');
-                expect(result.errorMessage).toContain('tokenCount is not a number');
+                expect(result.errorMessage).toContain("Invalid bucketData for user1");
+                expect(result.errorMessage).toContain("tokenCount is not a number");
             });
 
-            it('should return error for entry with wrong type fields', () => {
+            it("should return error for entry with wrong type fields", () => {
                 const invalidData = {
                     user1: {
-                        tokenCount: 'five',
-                        lifetimeTokenCount: 'ten',
-                        lastUpdated: 'yesterday',
-                        invocationCount: 'two'
+                        tokenCount: "five",
+                        lifetimeTokenCount: "ten",
+                        lastUpdated: "yesterday",
+                        invocationCount: "two"
                     }
                 };
 
@@ -470,14 +470,14 @@ describe('BucketData', () => {
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('Invalid bucketData for user1');
-                expect(result.errorMessage).toContain('tokenCount is not a number (got string)');
-                expect(result.errorMessage).toContain('lifetimeTokenCount is not a number (got string)');
-                expect(result.errorMessage).toContain('lastUpdated is not a number (got string)');
-                expect(result.errorMessage).toContain('invocationCount is not a number (got string)');
+                expect(result.errorMessage).toContain("Invalid bucketData for user1");
+                expect(result.errorMessage).toContain("tokenCount is not a number (got string)");
+                expect(result.errorMessage).toContain("lifetimeTokenCount is not a number (got string)");
+                expect(result.errorMessage).toContain("lastUpdated is not a number (got string)");
+                expect(result.errorMessage).toContain("invocationCount is not a number (got string)");
             });
 
-            it('should return error for null entry', () => {
+            it("should return error for null entry", () => {
                 const invalidData = {
                     user1: null
                 };
@@ -489,13 +489,13 @@ describe('BucketData', () => {
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('Invalid bucketData for user1');
-                expect(result.errorMessage).toContain('entry is not an object (got object)');
+                expect(result.errorMessage).toContain("Invalid bucketData for user1");
+                expect(result.errorMessage).toContain("entry is not an object (got object)");
             });
 
-            it('should allow dry run validation without bucket ID', () => {
+            it("should allow dry run validation without bucket ID", () => {
                 const result = (bucketData as any).handleSaveBucketDataEvent({
-                    bucketId: '',
+                    bucketId: "",
                     bucketData: JSON.stringify(testBucketData),
                     dryRun: true
                 });
@@ -504,7 +504,7 @@ describe('BucketData', () => {
                 expect(result.errorMessage).toBeUndefined();
             });
 
-            it('should return specific error message identifying problematic key', () => {
+            it("should return specific error message identifying problematic key", () => {
                 const mixedData = {
                     validUser: {
                         tokenCount: 5,
@@ -513,7 +513,7 @@ describe('BucketData', () => {
                         invocationCount: 2
                     },
                     invalidUser: {
-                        tokenCount: 'not a number',
+                        tokenCount: "not a number",
                         lifetimeTokenCount: 10,
                         lastUpdated: Date.now(),
                         invocationCount: 2
@@ -527,8 +527,8 @@ describe('BucketData', () => {
                 });
 
                 expect(result.success).toBe(false);
-                expect(result.errorMessage).toContain('Invalid bucketData for invalidUser');
-                expect(result.errorMessage).toContain('tokenCount is not a number');
+                expect(result.errorMessage).toContain("Invalid bucketData for invalidUser");
+                expect(result.errorMessage).toContain("tokenCount is not a number");
             });
         });
     });

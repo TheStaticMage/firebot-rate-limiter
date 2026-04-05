@@ -1,9 +1,9 @@
-import { FrontendCommunicator } from '@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator';
-import { firebot, logger } from '../main';
-import { Bucket, BucketWithId, DeleteBucketResponse, GetBucketResponse, GetBucketsAsArrayResponse, GetBucketsResponse, InstantiateBucketParameters, SaveBucketResponse } from '../shared/types';
-import { getDataFilePath } from './util';
+import { FrontendCommunicator } from "@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator";
+import { firebot, logger } from "../main";
+import { Bucket, BucketWithId, DeleteBucketResponse, GetBucketResponse, GetBucketsAsArrayResponse, GetBucketsResponse, InstantiateBucketParameters, SaveBucketResponse } from "../shared/types";
+import { getDataFilePath } from "./util";
 
-const bucketFilename = 'buckets.json';
+const bucketFilename = "buckets.json";
 
 export let bucketService: BucketService;
 
@@ -95,9 +95,11 @@ export class BucketService {
 
         if (existingBucket) {
             // Warn if simple bucket parameters don't match the request
-            if (params && existingBucket.type === 'simple') {
+            if (params && existingBucket.type === "simple") {
                 if (existingBucket.maxTokens !== params.bucketSize || existingBucket.refillRate !== params.bucketRate) {
-                    logger.warn(`Simple bucket parameter mismatch: id=${bucketId} bucket.maxTokens=${existingBucket.maxTokens} requested.bucketSize=${params.bucketSize} bucket.refillRate=${existingBucket.refillRate} requested.bucketRate=${params.bucketRate}`);
+                    logger.warn(
+                        `Simple bucket parameter mismatch: id=${bucketId} bucket.maxTokens=${existingBucket.maxTokens} requested.bucketSize=${params.bucketSize} bucket.refillRate=${existingBucket.refillRate} requested.bucketRate=${params.bucketRate}`
+                    );
                 }
             }
             return existingBucket;
@@ -107,7 +109,7 @@ export class BucketService {
         if (params) {
             this.buckets[bucketId] = {
                 name: params.bucketName || bucketId,
-                type: 'simple',
+                type: "simple",
                 maxTokens: params.bucketSize,
                 refillRate: params.bucketRate,
                 startTokens: params.bucketSize,
@@ -130,27 +132,27 @@ export class BucketService {
 
     private getBucketsAsArray(): BucketWithId[] {
         const bucketArray = Object.entries(this.buckets).map(([id, bucket]) => ({
-            ...(bucket),
+            ...bucket,
             id
         }));
 
-        const filtered = bucketArray.filter(bucket => bucket.type !== 'simple');
-        filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        const filtered = bucketArray.filter((bucket) => bucket.type !== "simple");
+        filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
         return filtered;
     }
 
     private saveBucket(bucketId: string, updatedBucket: Bucket): void {
         // Convert string number fields to numbers if necessary
-        if (typeof updatedBucket.startTokens === 'string') {
+        if (typeof updatedBucket.startTokens === "string") {
             updatedBucket.startTokens = Number(updatedBucket.startTokens);
         }
-        if (typeof updatedBucket.lifetimeMaxTokensValue === 'string') {
+        if (typeof updatedBucket.lifetimeMaxTokensValue === "string") {
             updatedBucket.lifetimeMaxTokensValue = Number(updatedBucket.lifetimeMaxTokensValue);
         }
-        if (typeof updatedBucket.maxTokens === 'string') {
+        if (typeof updatedBucket.maxTokens === "string") {
             updatedBucket.maxTokens = Number(updatedBucket.maxTokens);
         }
-        if (typeof updatedBucket.refillRate === 'string') {
+        if (typeof updatedBucket.refillRate === "string") {
             updatedBucket.refillRate = Number(updatedBucket.refillRate);
         }
 
@@ -165,9 +167,9 @@ export class BucketService {
         try {
             const fs = firebot.modules.fs;
             if (fs.existsSync(this.filePath)) {
-                const data = fs.readFileSync(this.filePath, 'utf8');
+                const data = fs.readFileSync(this.filePath, "utf8");
                 const parsed = JSON.parse(data);
-                this.buckets = typeof parsed === 'object' && parsed !== null ? parsed as Record<string, Bucket> : {};
+                this.buckets = typeof parsed === "object" && parsed !== null ? (parsed as Record<string, Bucket>) : {};
                 logger.debug(`Loaded ${Object.keys(this.buckets).length} buckets from ${this.filePath}`);
             } else {
                 logger.debug(`No bucket file found at ${this.filePath}. Starting with an empty bucket list.`);

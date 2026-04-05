@@ -1,6 +1,6 @@
 export type Bucket = {
     name: string;
-    type: 'simple' | 'advanced';
+    type: "simple" | "advanced";
     startTokens: number;
     maxTokens: number;
     refillRate: number;
@@ -9,11 +9,11 @@ export type Bucket = {
     persistBucket: boolean;
     fillFromStart: boolean;
     fillBucketAcrossRestarts: boolean;
-}
+};
 
 export type BucketWithId = Bucket & {
     id: string;
-}
+};
 
 export type BucketDataEntry = {
     tokenCount: number;
@@ -27,12 +27,12 @@ export type BucketDataObject = Record<string, BucketDataEntry>;
 export type GetBucketDataResponse = {
     bucketData: BucketDataObject | null;
     errorMessage?: string; // Optional error message
-}
+};
 
 export type SaveBucketDataResponse = {
     success: boolean;
     errorMessage?: string; // Optional error message
-}
+};
 
 export type CheckRateLimitResponse = {
     success: boolean;
@@ -41,10 +41,10 @@ export type CheckRateLimitResponse = {
     invocation: number; // Number of invocations made in this check
     rejectReason?: RejectReason; // Reason for rejection if not successful
     errorMessage?: string; // Optional error message
-}
+};
 
 export type CheckRateLimitRequest = {
-    bucketType: 'simple' | 'advanced';
+    bucketType: "simple" | "advanced";
     bucketId: string;
     bucketSize: number; // Only used for simple buckets
     bucketRate: number; // Only used for simple buckets
@@ -54,45 +54,45 @@ export type CheckRateLimitRequest = {
     inquiry: boolean;
     invocationLimit: boolean;
     invocationLimitValue: number;
-}
+};
 
 export type InstantiateBucketParameters = {
     bucketSize: number;
     bucketRate: number;
     bucketName?: string;
-}
+};
 
 export type DeleteBucketResponse = {
     buckets: Record<string, Bucket>;
     errorMessage?: string; // Optional error message
-}
+};
 
 export type GetBucketResponse = {
     bucket: BucketWithId | null;
     errorMessage?: string; // Optional error message
-}
+};
 
 export type GetBucketsResponse = {
     buckets: Record<string, Bucket>;
     errorMessage?: string; // Optional error message
-}
+};
 
 export type GetBucketsAsArrayResponse = {
     buckets: BucketWithId[];
     errorMessage?: string; // Optional error message
-}
+};
 
 export type InspectorBucketEntry = {
     id: string;
     name: string;
-    type: 'simple' | 'advanced';
+    type: "simple" | "advanced";
     dataEntryCount: number;
-}
+};
 
 export type GetInspectorDataResponse = {
     buckets: InspectorBucketEntry[];
     errorMessage?: string; // Optional error message
-}
+};
 
 export type LimitApprovedEventMetadata = {
     alwaysAllow: boolean; // Whether this approval was based on an "always" condition
@@ -105,7 +105,7 @@ export type LimitApprovedEventMetadata = {
     triggerType: string; // Type of the original event source
     triggerUsername: string; // Username from the original event source if tracked
     approvalId: string; // Unique approval ID that can be used to undo this check within 10 minutes
-}
+};
 
 export type LimitExceededEventMetadata = {
     bucketId: string;
@@ -131,14 +131,13 @@ export type LimitExceededEventMetadata = {
 export type SaveBucketResponse = {
     buckets: Record<string, Bucket>;
     errorMessage?: string; // Optional error message
-}
+};
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ScriptSettings {
-}
+export interface ScriptSettings {}
 
 export enum RejectReason {
-    Error = 'error',
-    RateLimit = 'rate_limit',
-    InvocationLimit = 'invocation_limit',
+    Error = "error",
+    RateLimit = "rate_limit",
+    InvocationLimit = "invocation_limit"
 }

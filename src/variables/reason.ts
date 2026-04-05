@@ -1,7 +1,7 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { Trigger } from '@crowbartools/firebot-custom-scripts-types/types/triggers';
-import { logger } from '../main';
-import { LimitExceededEventMetadata } from '../shared/types';
+import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { logger } from "../main";
+import { LimitExceededEventMetadata } from "../shared/types";
 
 export const rateLimitRejectReason: ReplaceVariable = {
     definition: {
@@ -9,18 +9,18 @@ export const rateLimitRejectReason: ReplaceVariable = {
         description: "Returns the reason for the rate limit rejection.",
         possibleDataOutput: ["text"],
         triggers: {
-            "manual": true,
-            "event": ['rate-limiter:limit-exceeded']
+            manual: true,
+            event: ["rate-limiter:limit-exceeded"]
         }
     },
     evaluator: async (trigger: Trigger) => {
         const eventData = trigger.metadata?.eventData as LimitExceededEventMetadata | undefined;
         if (!eventData) {
-            logger.warn('Called rateLimitRejectReason variable without expected metadata.');
+            logger.warn("Called rateLimitRejectReason variable without expected metadata.");
             return "unknown";
         }
         if (!eventData.rejectReason) {
-            logger.warn('Rate limit exceeded without a reject reason.');
+            logger.warn("Rate limit exceeded without a reject reason.");
             return "unknown";
         }
         return eventData.rejectReason;

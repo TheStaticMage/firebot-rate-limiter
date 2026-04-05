@@ -1,19 +1,19 @@
-import { Firebot } from '@crowbartools/firebot-custom-scripts-types';
-import { EffectScope } from '@crowbartools/firebot-custom-scripts-types/types/effects';
-import { randomUUID } from 'crypto';
-import { bucketData } from '../backend/bucket-data';
-import { emitEvent } from '../events';
-import { approvalService, firebot, logger } from '../main';
-import { CheckRateLimitRequest, CheckRateLimitResponse, LimitApprovedEventMetadata, LimitExceededEventMetadata, RejectReason } from '../shared/types';
+import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import { EffectScope } from "@crowbartools/firebot-custom-scripts-types/types/effects";
+import { randomUUID } from "crypto";
+import { bucketData } from "../backend/bucket-data";
+import { emitEvent } from "../events";
+import { approvalService, firebot, logger } from "../main";
+import { CheckRateLimitRequest, CheckRateLimitResponse, LimitApprovedEventMetadata, LimitExceededEventMetadata, RejectReason } from "../shared/types";
 
 type effectModel = {
     id: string; // Set by Firebot
     bucketId: string;
-    bucketType: 'simple' | 'advanced';
+    bucketType: "simple" | "advanced";
     bucketSize: number | string;
     bucketRate: number | string;
     bucketName?: string;
-    keyType: 'user' | 'global' | 'custom';
+    keyType: "user" | "global" | "custom";
     key: string;
     tokens: number | string;
     inquiry: boolean;
@@ -31,7 +31,7 @@ type effectModel = {
     failureEffectList?: {
         list: any[];
     };
-}
+};
 
 export const checkEffect: Firebot.EffectType<effectModel> = {
     definition: {
@@ -69,7 +69,8 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             },
             {
                 label: "Reject Reason",
-                description: "If the request was not allowed, this will contain the reason the request was rejected. This will generally be either 'rate_limit' or 'invocation_limit'. (The rate limit is evaluated before the invocation limit.)",
+                description:
+                    "If the request was not allowed, this will contain the reason the request was rejected. This will generally be either 'rate_limit' or 'invocation_limit'. (The rate limit is evaluated before the invocation limit.)",
                 defaultName: "rateLimitRejectReason"
             },
             {
@@ -199,7 +200,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             return "";
         }
 
-        if (effect.bucketType === 'simple') {
+        if (effect.bucketType === "simple") {
             if (effect.bucketName && effect.bucketName.trim() !== "") {
                 return `${effect.bucketName} | ${effect.keyType.toLocaleUpperCase()} | ${effect.bucketSize} @ ${effect.bucketRate}/sec`;
             }
@@ -216,7 +217,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
     },
     optionsValidator: (effect: effectModel): string[] => {
         const errors: string[] = [];
-        if (effect.bucketType === 'simple') {
+        if (effect.bucketType === "simple") {
             if (effect.bucketSize === undefined || effect.bucketSize === null || String(effect.bucketSize).trim() === "") {
                 errors.push("Bucket Size is required");
             }
@@ -271,22 +272,22 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         $scope.effect.runOnFailure = $scope.effect.runOnFailure === true;
         $scope.effect.failureEffectList = $scope.effect.failureEffectList || { list: [] };
 
-        $scope.failureEffectListUpdated = function(effects: any) {
+        $scope.failureEffectListUpdated = function (effects: any) {
             $scope.effect.failureEffectList = effects;
         };
 
         $scope.bucketType = $scope.effect.bucketType;
 
         $scope.keyTypes = {
-            "user": "User",
-            "global": "Global",
-            "custom": "Custom"
+            user: "User",
+            global: "Global",
+            custom: "Custom"
         };
 
         const buckets = backendCommunicator.fireEventSync("rate-limiter:getBucketsAsArray", {});
         if (buckets.errorMessage) {
             ngToast.create({
-                className: 'danger',
+                className: "danger",
                 content: `Error loading buckets: ${buckets.errorMessage}`
             });
             return;
@@ -298,16 +299,12 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         }));
 
         // Check if the selected bucketId exists in the options
-        if (
-            $scope.effect.bucketType === 'advanced' &&
-            $scope.effect.bucketId &&
-            !buckets.buckets.some((option: any) => option.id === $scope.effect.bucketId)
-        ) {
+        if ($scope.effect.bucketType === "advanced" && $scope.effect.bucketId && !buckets.buckets.some((option: any) => option.id === $scope.effect.bucketId)) {
             ngToast.create({
-                className: 'danger',
+                className: "danger",
                 content: `Selected bucket is not available. Please choose a valid bucket.`
             });
-            $scope.effect.bucketId = '';
+            $scope.effect.bucketId = "";
         }
     },
     onTriggerEvent: async (event) => {
@@ -340,9 +337,9 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
 
         // Compute the key based on the key type
         let bucketKey = "";
-        if (effect.keyType === 'global') {
+        if (effect.keyType === "global") {
             bucketKey = "global";
-        } else if (effect.keyType === 'user') {
+        } else if (effect.keyType === "user") {
             bucketKey = `user:${trigger.metadata.username}`;
         } else {
             bucketKey = `custom:${effect.key}`;
@@ -354,7 +351,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         const bucketRateValue = Number(effect.bucketRate);
         const request: CheckRateLimitRequest = {
             bucketType: effect.bucketType,
-            bucketId: effect.bucketType === 'advanced' ? effect.bucketId : effect.id,
+            bucketId: effect.bucketType === "advanced" ? effect.bucketId : effect.id,
             bucketSize: bucketSizeValue,
             bucketRate: bucketRateValue,
             bucketName: effect.bucketName,
@@ -366,7 +363,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         };
 
         const invalidBucketErrors: string[] = [];
-        if (effect.bucketType === 'simple') {
+        if (effect.bucketType === "simple") {
             if (!Number.isFinite(bucketSizeValue) || bucketSizeValue <= 0) {
                 invalidBucketErrors.push("Bucket Size must be greater than 0");
             }
@@ -409,7 +406,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
         }
         result.outputs.rateLimitRawObject.request = request;
         result.outputs.rateLimitRawObject.response = checkResult;
-        result.outputs.rateLimitAllowed = checkResult.success ? 'true' : 'false';
+        result.outputs.rateLimitAllowed = checkResult.success ? "true" : "false";
         result.outputs.rateLimitNext = checkResult.next;
         result.outputs.rateLimitRemaining = checkResult.remaining;
         result.outputs.rateLimitInvocation = checkResult.invocation;
@@ -418,7 +415,9 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
 
         // Success case
         if (alwaysAllow || checkResult.success) {
-            logger.debug(`Rate limit PASS: alwaysAllow=${alwaysAllow} success=${checkResult.success} bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry} next=${checkResult.next} remaining=${checkResult.remaining} invocation=${checkResult.invocation}`);
+            logger.debug(
+                `Rate limit PASS: alwaysAllow=${alwaysAllow} success=${checkResult.success} bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry} next=${checkResult.next} remaining=${checkResult.remaining} invocation=${checkResult.invocation}`
+            );
             result.outputs.rateLimitAllowed = "true";
 
             const approvalId = randomUUID();
@@ -426,7 +425,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             logger.debug(`Generated approval ID: approvalId=${approvalId} bucketId=${request.bucketId} bucketKey=${bucketKey}`);
 
             const tokensConsumed = request.inquiry ? 0 : request.tokenRequest;
-            const invocationIncremented = (checkResult.success && !request.inquiry) ? 1 : 0;
+            const invocationIncremented = checkResult.success && !request.inquiry ? 1 : 0;
             approvalService.recordApproval(approvalId, request.bucketId, bucketKey, tokensConsumed, invocationIncremented);
 
             if (effect.triggerApproveEvent) {
@@ -440,11 +439,12 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                     messageId: (trigger.metadata.chatMessage as any)?.id || "",
                     triggerMetadata: trigger.metadata || {},
                     triggerType: trigger.type || "",
-                    triggerUsername: typeof trigger.metadata.eventData?.originalUsername === "string"
-                        ? trigger.metadata.eventData.originalUsername
-                        : (typeof trigger.metadata.eventData?.username === "string"
-                            ? trigger.metadata.eventData.username
-                            : trigger.metadata.username),
+                    triggerUsername:
+                        typeof trigger.metadata.eventData?.originalUsername === "string"
+                            ? trigger.metadata.eventData.originalUsername
+                            : typeof trigger.metadata.eventData?.username === "string"
+                              ? trigger.metadata.eventData.username
+                              : trigger.metadata.username,
                     approvalId: approvalId
                 };
                 emitEvent("approved", approvedMetadata, false);
@@ -452,7 +452,9 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
 
             return result;
         }
-        logger.debug(`Rate limit FAIL: bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry} next=${checkResult.next} remaining=${checkResult.remaining} invocation=${checkResult.invocation} errorMessage=${checkResult.errorMessage} reason=${checkResult.rejectReason}`);
+        logger.debug(
+            `Rate limit FAIL: bucketId=${request.bucketId} key=${bucketKey} tokens=${effect.tokens} inquiry=${effect.inquiry} next=${checkResult.next} remaining=${checkResult.remaining} invocation=${checkResult.invocation} errorMessage=${checkResult.errorMessage} reason=${checkResult.rejectReason}`
+        );
 
         // We may stop execution
         result.execution.stop = effect.stopExecution;
@@ -465,9 +467,7 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
             const { outputs = {} } = event ?? {};
             let clonedOutputs: any;
             try {
-                clonedOutputs = typeof structuredClone === 'function'
-                    ? structuredClone(outputs)
-                    : JSON.parse(JSON.stringify(outputs));
+                clonedOutputs = typeof structuredClone === "function" ? structuredClone(outputs) : JSON.parse(JSON.stringify(outputs));
             } catch (cloneError) {
                 logger.warn(`Failed to clone outputs for failure effect list: ${String(cloneError)}. Using original outputs.`);
                 clonedOutputs = outputs;
@@ -517,11 +517,12 @@ export const checkEffect: Firebot.EffectType<effectModel> = {
                 next: checkResult.next,
                 triggerMetadata: trigger.metadata || {},
                 triggerType: trigger.type || "",
-                triggerUsername: typeof trigger.metadata.eventData?.originalUsername === "string"
-                    ? trigger.metadata.eventData.originalUsername
-                    : (typeof trigger.metadata.eventData?.username === "string"
-                        ? trigger.metadata.eventData.username
-                        : trigger.metadata.username),
+                triggerUsername:
+                    typeof trigger.metadata.eventData?.originalUsername === "string"
+                        ? trigger.metadata.eventData.originalUsername
+                        : typeof trigger.metadata.eventData?.username === "string"
+                          ? trigger.metadata.eventData.username
+                          : trigger.metadata.username,
                 rejectReason: checkResult.rejectReason,
                 remaining: checkResult.remaining,
                 stackDepth: stackDepth + 1,

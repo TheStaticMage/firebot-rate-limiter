@@ -1,10 +1,22 @@
-import { FrontendCommunicator } from '@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator';
-import { firebot, logger } from '../main';
-import { Bucket, BucketDataEntry, BucketDataObject, CheckRateLimitRequest, CheckRateLimitResponse, GetBucketDataResponse, GetInspectorDataResponse, InspectorBucketEntry, InstantiateBucketParameters, RejectReason, SaveBucketDataResponse } from '../shared/types';
-import { bucketService, BucketService } from './bucket-service';
-import { getDataFilePath } from './util';
+import { FrontendCommunicator } from "@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator";
+import { firebot, logger } from "../main";
+import {
+    Bucket,
+    BucketDataEntry,
+    BucketDataObject,
+    CheckRateLimitRequest,
+    CheckRateLimitResponse,
+    GetBucketDataResponse,
+    GetInspectorDataResponse,
+    InspectorBucketEntry,
+    InstantiateBucketParameters,
+    RejectReason,
+    SaveBucketDataResponse
+} from "../shared/types";
+import { BucketService, bucketService } from "./bucket-service";
+import { getDataFilePath } from "./util";
 
-const bucketDataFilename = 'persisted-bucket-data.json';
+const bucketDataFilename = "persisted-bucket-data.json";
 const bucketDataPersistenceWriteInterval = 5000; // 5 seconds
 
 export let bucketData: BucketData;
@@ -38,7 +50,7 @@ export class BucketData {
         });
         logger.debug("Registered rate-limiter:getBucketData frontend communicator handler.");
 
-        this.frontendCommunicator.on("rate-limiter:saveBucketData", (data: { bucketId: string, bucketData: string, dryRun: boolean }): SaveBucketDataResponse => {
+        this.frontendCommunicator.on("rate-limiter:saveBucketData", (data: { bucketId: string; bucketData: string; dryRun: boolean }): SaveBucketDataResponse => {
             return this.handleSaveBucketDataEvent(data);
         });
         logger.debug("Registered rate-limiter:saveBucketData frontend communicator handler.");
@@ -96,7 +108,7 @@ export class BucketData {
         return { buckets: inspectorBuckets };
     }
 
-    private handleSaveBucketDataEvent(data: { bucketId: string, bucketData: string, dryRun: boolean }): SaveBucketDataResponse {
+    private handleSaveBucketDataEvent(data: { bucketId: string; bucketData: string; dryRun: boolean }): SaveBucketDataResponse {
         const { bucketId, bucketData, dryRun } = data;
 
         // Validate that the bucket exists if given
@@ -119,7 +131,7 @@ export class BucketData {
         }
 
         // Validate that bucketData is a BucketDataObject (object with string keys and BucketDataEntry values)
-        if (typeof parsedBucketData !== 'object' || parsedBucketData === null || Array.isArray(parsedBucketData)) {
+        if (typeof parsedBucketData !== "object" || parsedBucketData === null || Array.isArray(parsedBucketData)) {
             logger.warn(`rate-limiter:saveBucketData: Invalid bucketData provided for bucket ID: ${bucketId} - expected object but got ${typeof parsedBucketData}`);
             return { success: false, errorMessage: `Invalid bucketData provided for bucket ID: ${bucketId} - expected object but got ${typeof parsedBucketData}` };
         }
@@ -128,25 +140,25 @@ export class BucketData {
         for (const [key, entry] of Object.entries(parsedBucketData)) {
             const errors: string[] = [];
 
-            if (typeof entry !== 'object' || entry === null) {
+            if (typeof entry !== "object" || entry === null) {
                 errors.push(`entry is not an object (got ${typeof entry})`);
             } else {
-                if (typeof entry.tokenCount !== 'number') {
+                if (typeof entry.tokenCount !== "number") {
                     errors.push(`tokenCount is not a number (got ${typeof entry.tokenCount})`);
                 }
-                if (typeof entry.lifetimeTokenCount !== 'number') {
+                if (typeof entry.lifetimeTokenCount !== "number") {
                     errors.push(`lifetimeTokenCount is not a number (got ${typeof entry.lifetimeTokenCount})`);
                 }
-                if (typeof entry.lastUpdated !== 'number') {
+                if (typeof entry.lastUpdated !== "number") {
                     errors.push(`lastUpdated is not a number (got ${typeof entry.lastUpdated})`);
                 }
-                if (typeof entry.invocationCount !== 'number') {
+                if (typeof entry.invocationCount !== "number") {
                     errors.push(`invocationCount is not a number (got ${typeof entry.invocationCount})`);
                 }
             }
 
             if (errors.length > 0) {
-                const errorMessage = `Invalid bucketData for ${key} - ${errors.join(', ')}`;
+                const errorMessage = `Invalid bucketData for ${key} - ${errors.join(", ")}`;
                 logger.warn(`rate-limiter:saveBucketData: ${errorMessage}`);
                 return { success: false, errorMessage };
             }
@@ -162,7 +174,7 @@ export class BucketData {
 
     check(request: CheckRateLimitRequest): CheckRateLimitResponse {
         let instantiateBucketParameters: InstantiateBucketParameters | undefined;
-        if (request.bucketType === 'simple') {
+        if (request.bucketType === "simple") {
             instantiateBucketParameters = {
                 bucketSize: request.bucketSize,
                 bucketRate: request.bucketRate,
@@ -350,7 +362,7 @@ export class BucketData {
                 this.saveBucketDataToFile({});
             }
 
-            const data = fs.readFileSync(this.filePath, 'utf-8');
+            const data = fs.readFileSync(this.filePath, "utf-8");
             return this.parseFileData(data);
         } catch (error) {
             logger.error(`Error loading bucket data from file: ${this.filePath} error=${error}`);
@@ -389,7 +401,7 @@ export class BucketData {
         try {
             const { fs } = firebot.modules;
             const jsonData = JSON.stringify(data, null, 2);
-            fs.writeFileSync(this.filePath, jsonData, 'utf-8');
+            fs.writeFileSync(this.filePath, jsonData, "utf-8");
         } catch (error) {
             logger.error(`Error saving bucket data to file: ${this.filePath} error=${error}`);
         }
