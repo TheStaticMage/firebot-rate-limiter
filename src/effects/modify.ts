@@ -1,31 +1,31 @@
-import { Firebot } from '@crowbartools/firebot-custom-scripts-types';
-import { EffectScope } from '@crowbartools/firebot-custom-scripts-types/types/effects';
-import { BucketData, bucketData } from '../backend/bucket-data';
-import { BucketService, bucketService } from '../backend/bucket-service';
-import { logger } from '../main';
+import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import { EffectScope } from "@crowbartools/firebot-custom-scripts-types/types/effects";
+import { BucketData, bucketData } from "../backend/bucket-data";
+import { BucketService, bucketService } from "../backend/bucket-service";
+import { logger } from "../main";
 
 export type modifyEffectModel = {
     id: string; // Set by Firebot
     bucketId: string;
-    keyType: 'user' | 'allusers' | 'global' | 'custom' | 'allkeys';
+    keyType: "user" | "allusers" | "global" | "custom" | "allkeys";
     userKey: string;
     customKey: string;
-    action: 'modify' | 'delete';
+    action: "modify" | "delete";
     createMissing: boolean;
-    currentTokenOperation: 'noChange' | 'add' | 'set';
+    currentTokenOperation: "noChange" | "add" | "set";
     currentTokenValue: number;
-    lifetimeTokenOperation: 'noChange' | 'add' | 'set';
+    lifetimeTokenOperation: "noChange" | "add" | "set";
     lifetimeTokenValue: number;
-    invocationOperation: 'noChange' | 'add' | 'set';
+    invocationOperation: "noChange" | "add" | "set";
     invocationValue: number;
-    lastUpdatedOperation: 'noChange' | 'add' | 'set';
+    lastUpdatedOperation: "noChange" | "add" | "set";
     lastUpdatedValue: number;
-}
+};
 
 type processTriggerOutputs = {
     rateLimitModifyBucketDataSuccess: string; // "true" or "false"
     rateLimitModifyBucketDataRawObject: Record<string, any>; // The raw object of the bucket state after being modified
-}
+};
 
 export class CriticalError extends Error {}
 export class NonCriticalError extends Error {}
@@ -262,7 +262,7 @@ export const modifyBucketDataEffect: Firebot.EffectType<modifyEffectModel> = {
         const buckets = backendCommunicator.fireEventSync("rate-limiter:getBucketsAsArray", {});
         if (buckets.errorMessage) {
             ngToast.create({
-                className: 'danger',
+                className: "danger",
                 content: `Error loading buckets: ${buckets.errorMessage}`
             });
             return;
@@ -274,15 +274,12 @@ export const modifyBucketDataEffect: Firebot.EffectType<modifyEffectModel> = {
         }));
 
         // Check if the selected bucketId exists in the options
-        if (
-            $scope.effect.bucketId &&
-            !buckets.buckets.some((option: any) => option.id === $scope.effect.bucketId)
-        ) {
+        if ($scope.effect.bucketId && !buckets.buckets.some((option: any) => option.id === $scope.effect.bucketId)) {
             ngToast.create({
-                className: 'danger',
+                className: "danger",
                 content: `Selected bucket is not available. Please choose a valid bucket.`
             });
-            $scope.effect.bucketId = '';
+            $scope.effect.bucketId = "";
         }
     },
     onTriggerEvent: async (event) => {
@@ -321,33 +318,33 @@ export function processTrigger(effect: modifyEffectModel, bucketData: BucketData
     // other specified options.
     const selectedKeys = [];
     let selectedKey = "";
-    if (effect.keyType === 'allusers') {
+    if (effect.keyType === "allusers") {
         const bucketKeys = bucketData.listKeys(effect.bucketId);
         for (const key of bucketKeys) {
-            if (key.startsWith('user:')) {
+            if (key.startsWith("user:")) {
                 selectedKeys.push(key);
             }
         }
         if (selectedKeys.length === 0) {
             throw new NonCriticalError(`No user keys to ${effect.action} found in bucket ${effect.bucketId}.`);
         }
-    } else if (effect.keyType === 'allkeys') {
+    } else if (effect.keyType === "allkeys") {
         selectedKeys.push(...bucketData.listKeys(effect.bucketId));
         if (selectedKeys.length === 0) {
             throw new NonCriticalError(`No keys to ${effect.action} found in bucket ${effect.bucketId}.`);
         }
-    } else if (effect.keyType === 'user') {
+    } else if (effect.keyType === "user") {
         if (!effect.userKey) {
             throw new NonCriticalError(`User key is required for 'user' key type (effect ID: ${effect.id}).`);
         }
         selectedKey = `user:${effect.userKey}`;
-    } else if (effect.keyType === 'custom') {
+    } else if (effect.keyType === "custom") {
         if (!effect.customKey) {
             throw new NonCriticalError(`Custom key is required for 'custom' key type (effect ID: ${effect.id}).`);
         }
         selectedKey = `custom:${effect.customKey}`;
-    } else if (effect.keyType === 'global') {
-        selectedKey = 'global';
+    } else if (effect.keyType === "global") {
+        selectedKey = "global";
     }
 
     // If we are checking a specific key, ensure it exists in the bucket.
@@ -360,7 +357,7 @@ export function processTrigger(effect: modifyEffectModel, bucketData: BucketData
     }
 
     // If the action is to delete, then delete the keys and return.
-    if (effect.action === 'delete') {
+    if (effect.action === "delete") {
         let deletedCount = 0;
         for (const key of selectedKeys) {
             if (bucketData.deleteKey(effect.bucketId, key)) {
@@ -387,38 +384,38 @@ export function processTrigger(effect: modifyEffectModel, bucketData: BucketData
         const changes: string[] = [];
 
         // Apply the modifications based on the effect's options.
-        if (effect.currentTokenOperation === 'add') {
+        if (effect.currentTokenOperation === "add") {
             const amount = Number(effect.currentTokenValue);
             changes.push(`Adding ${amount} tokens (new value: ${bucketDataEntry.tokenCount + amount})`);
             bucketDataEntry.tokenCount += amount;
-        } else if (effect.currentTokenOperation === 'set') {
+        } else if (effect.currentTokenOperation === "set") {
             bucketDataEntry.tokenCount = Number(effect.currentTokenValue);
             changes.push(`Setting tokens to ${effect.currentTokenValue}`);
         }
 
-        if (effect.lifetimeTokenOperation === 'add') {
+        if (effect.lifetimeTokenOperation === "add") {
             const amount = Number(effect.lifetimeTokenValue);
             changes.push(`Adding ${amount} lifetime tokens (new value: ${bucketDataEntry.lifetimeTokenCount + amount})`);
             bucketDataEntry.lifetimeTokenCount += amount;
-        } else if (effect.lifetimeTokenOperation === 'set') {
+        } else if (effect.lifetimeTokenOperation === "set") {
             bucketDataEntry.lifetimeTokenCount = Number(effect.lifetimeTokenValue);
             changes.push(`Setting lifetime tokens to ${bucketDataEntry.lifetimeTokenCount}`);
         }
 
-        if (effect.invocationOperation === 'add') {
+        if (effect.invocationOperation === "add") {
             const amount = Number(effect.invocationValue);
             changes.push(`Adding ${amount} invocations (new value: ${bucketDataEntry.invocationCount + amount})`);
             bucketDataEntry.invocationCount += amount;
-        } else if (effect.invocationOperation === 'set') {
+        } else if (effect.invocationOperation === "set") {
             bucketDataEntry.invocationCount = Number(effect.invocationValue);
             changes.push(`Setting invocations to ${bucketDataEntry.invocationCount}`);
         }
 
-        if (effect.lastUpdatedOperation === 'add') {
+        if (effect.lastUpdatedOperation === "add") {
             const amount = 1000 * Number(effect.lastUpdatedValue);
             changes.push(`Adding ${amount} milliseconds to last updated (new value: ${bucketDataEntry.lastUpdated + amount})`);
             bucketDataEntry.lastUpdated += amount;
-        } else if (effect.lastUpdatedOperation === 'set') {
+        } else if (effect.lastUpdatedOperation === "set") {
             bucketDataEntry.lastUpdated = 1000 * Number(effect.lastUpdatedValue);
             changes.push(`Setting last updated to ${bucketDataEntry.lastUpdated}`);
         }

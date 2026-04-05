@@ -1,6 +1,6 @@
-import { logger } from '../main';
-import { BucketService } from './bucket-service';
-import { BucketData } from './bucket-data';
+import { logger } from "../main";
+import { BucketData } from "./bucket-data";
+import { BucketService } from "./bucket-service";
 
 interface ApprovalEntry {
     approvalId: string;
@@ -96,20 +96,20 @@ export class ApprovalService {
         const approval = this.getApproval(approvalId);
         if (!approval) {
             logger.debug(`Undo failed: approvalId=${approvalId} reason=invalid_or_expired`);
-            return { success: false, reason: 'invalid_or_expired' };
+            return { success: false, reason: "invalid_or_expired" };
         }
 
         const bucket = this.bucketService.getBucket(approval.bucketId);
         if (!bucket) {
             logger.debug(`Undo failed: approvalId=${approvalId} reason=bucket_not_found bucketId=${approval.bucketId}`);
-            return { success: false, reason: 'bucket_not_found' };
+            return { success: false, reason: "bucket_not_found" };
         }
 
         const bucketDataEntries = this.bucketData.getAllBucketData(approval.bucketId);
         const entry = bucketDataEntries[approval.bucketKey];
         if (!entry) {
             logger.debug(`Undo failed: approvalId=${approvalId} reason=key_not_found bucketId=${approval.bucketId} bucketKey=${approval.bucketKey}`);
-            return { success: false, reason: 'key_not_found' };
+            return { success: false, reason: "key_not_found" };
         }
 
         const originalTokenCount = entry.tokenCount;
@@ -146,6 +146,6 @@ export class ApprovalService {
             this.cleanupIntervalId = null;
         }
         this.approvals.clear();
-        logger.debug('ApprovalService shutdown complete');
+        logger.debug("ApprovalService shutdown complete");
     }
 }

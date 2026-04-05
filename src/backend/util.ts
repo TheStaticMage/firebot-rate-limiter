@@ -1,4 +1,4 @@
-import { firebot } from '../main';
+import { firebot } from "../main";
 
 export function getDataFilePath(filename: string): string {
     const { fs, path } = firebot.modules;

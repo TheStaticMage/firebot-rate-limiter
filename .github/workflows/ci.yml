@@ -36,7 +36,7 @@ jobs:
             exit 1
           fi
           echo "package.json version is ${{ steps.package-version.outputs.current-version }}"
-          script_version=$(grep '^const scriptVersion = ' src/main.ts | cut -d"'" -f2)
+          script_version=$(grep '^const scriptVersion = ' src/main.ts | cut -d'"' -f2)
           echo "script version is $script_version"
           if [ "${{ steps.package-version.outputs.current-version }}" != "$script_version" ]; then
             echo "Version in package.json does not match version in src/main.ts"

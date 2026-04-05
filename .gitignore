@@ -20,9 +20,7 @@ node_modules/
 
 # Coverage
 /coverage/
-/.claude
-/.github/copilot-instructions.md
 /AGENTS.md
 /opencode.json
 /plans/
-.grepai/
+/.codenomad/

@@ -1,11 +1,11 @@
-import { expect, jest } from '@jest/globals';
-import { BucketData } from '../backend/bucket-data';
-import { BucketService } from '../backend/bucket-service';
-import { CheckRateLimitRequest } from '../shared/types';
-import { checkEffect } from './check';
+import { expect, jest } from "@jest/globals";
+import { BucketData } from "../backend/bucket-data";
+import { BucketService } from "../backend/bucket-service";
+import { CheckRateLimitRequest } from "../shared/types";
+import { checkEffect } from "./check";
 
 // Mock the logger to avoid actual logging during tests
-jest.mock('../main', () => ({
+jest.mock("../main", () => ({
     logger: {
         debug: jest.fn(),
         error: jest.fn(),
@@ -19,10 +19,10 @@ jest.mock('../main', () => ({
         firebot: {
             accounts: {
                 streamer: {
-                    username: 'streamer'
+                    username: "streamer"
                 },
                 bot: {
-                    username: 'bot'
+                    username: "bot"
                 }
             }
         },
@@ -34,7 +34,7 @@ jest.mock('../main', () => ({
             },
             fs: {
                 existsSync: jest.fn().mockReturnValue(false),
-                readFileSync: jest.fn().mockReturnValue('{}'),
+                readFileSync: jest.fn().mockReturnValue("{}"),
                 writeFileSync: jest.fn()
             },
             frontendCommunicator: {
@@ -49,16 +49,16 @@ jest.mock('../main', () => ({
 }));
 
 // Mock the events module
-jest.mock('../events', () => ({
+jest.mock("../events", () => ({
     emitEvent: jest.fn()
 }));
 
 // Mock filesystem operations
-jest.mock('../backend/util', () => ({
-    getDataFilePath: jest.fn(() => '/tmp/test-bucket-data.json')
+jest.mock("../backend/util", () => ({
+    getDataFilePath: jest.fn(() => "/tmp/test-bucket-data.json")
 }));
 
-describe('checkEffect.onTriggerEvent', () => {
+describe("checkEffect.onTriggerEvent", () => {
     let bucketData: BucketData;
     let bucketService: BucketService;
     let mockTwitchApi: jest.MockedFunction<any>;
@@ -69,35 +69,35 @@ describe('checkEffect.onTriggerEvent', () => {
         jest.clearAllMocks();
 
         // Setup mocks
-        const { firebot } = require('../main');
+        const { firebot } = require("../main");
         mockTwitchApi = firebot.modules.twitchApi.channelRewards.approveOrRejectChannelRewardRedemption;
-        mockEmitEvent = require('../events').emitEvent;
+        mockEmitEvent = require("../events").emitEvent;
         mockEffectRunner = firebot.modules.effectRunner.processEffects;
 
         // Create actual bucket service and data instances for testing
         bucketService = new BucketService();
 
         // Set the global bucket service variable first
-        const BucketServiceModule = require('../backend/bucket-service');
+        const BucketServiceModule = require("../backend/bucket-service");
         BucketServiceModule.bucketService = bucketService;
 
         // Now create bucket data (which will use the global bucketService)
         bucketData = new BucketData(Date.now());
 
         // Patch bucket data to use our instances
-        const BucketDataModule = require('../backend/bucket-data');
+        const BucketDataModule = require("../backend/bucket-data");
         BucketDataModule.bucketData = bucketData;
     });
 
-    it('should allow request when tokens are available', async () => {
+    it("should allow request when tokens are available", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 10,
             bucketRate: 1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 5,
             inquiry: false,
             enforceStreamer: true,
@@ -107,42 +107,42 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser'
+                username: "testuser"
             }
         };
 
         const result = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(result).toBeTruthy();
-        if (result && typeof result === 'object' && 'outputs' in result) {
-            expect(result.outputs?.rateLimitAllowed).toBe('true');
+        if (result && typeof result === "object" && "outputs" in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe("true");
             expect(result.execution?.stop).toBe(false);
         }
     });
 
-    it('should reject request when tokens are not available', async () => {
+    it("should reject request when tokens are not available", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 1,
             bucketRate: 0.1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 10, // Request more than available
             inquiry: false,
             enforceStreamer: true,
@@ -152,43 +152,43 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser'
+                username: "testuser"
             }
         };
 
         const result = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(result).toBeTruthy();
-        if (result && typeof result === 'object' && 'outputs' in result) {
-            expect(result.outputs?.rateLimitAllowed).toBe('false');
+        if (result && typeof result === "object" && "outputs" in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe("false");
             expect(result.execution?.stop).toBe(true);
-            expect(result.outputs?.rateLimitRejectReason).toBe('rate_limit');
+            expect(result.outputs?.rateLimitRejectReason).toBe("rate_limit");
         }
     });
 
-    it('should reject request when bucket size is invalid', async () => {
+    it("should reject request when bucket size is invalid", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 0,
             bucketRate: 1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 1,
             inquiry: false,
             enforceStreamer: true,
@@ -198,43 +198,43 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser'
+                username: "testuser"
             }
         };
 
         const result = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(result).toBeTruthy();
-        if (result && typeof result === 'object' && 'outputs' in result) {
-            expect(result.outputs?.rateLimitAllowed).toBe('false');
-            expect(result.outputs?.rateLimitRejectReason).toBe('error');
-            expect(result.outputs?.rateLimitErrorMessage).toContain('Bucket Size');
+        if (result && typeof result === "object" && "outputs" in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe("false");
+            expect(result.outputs?.rateLimitRejectReason).toBe("error");
+            expect(result.outputs?.rateLimitErrorMessage).toContain("Bucket Size");
         }
     });
 
-    it('should reject request when bucket rate is invalid', async () => {
+    it("should reject request when bucket rate is invalid", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 10,
             bucketRate: -1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 1,
             inquiry: false,
             enforceStreamer: true,
@@ -244,43 +244,43 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser'
+                username: "testuser"
             }
         };
 
         const result = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(result).toBeTruthy();
-        if (result && typeof result === 'object' && 'outputs' in result) {
-            expect(result.outputs?.rateLimitAllowed).toBe('false');
-            expect(result.outputs?.rateLimitRejectReason).toBe('error');
-            expect(result.outputs?.rateLimitErrorMessage).toContain('Refill Rate');
+        if (result && typeof result === "object" && "outputs" in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe("false");
+            expect(result.outputs?.rateLimitRejectReason).toBe("error");
+            expect(result.outputs?.rateLimitErrorMessage).toContain("Refill Rate");
         }
     });
 
-    it('should clamp negative invocation limit values in the request', async () => {
+    it("should clamp negative invocation limit values in the request", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 10,
             bucketRate: 1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 1,
             inquiry: false,
             enforceStreamer: true,
@@ -290,43 +290,43 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: true,
             invocationLimitValue: -3
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser'
+                username: "testuser"
             }
         };
 
         const result = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(result).toBeTruthy();
-        if (result && typeof result === 'object' && 'outputs' in result) {
+        if (result && typeof result === "object" && "outputs" in result) {
             const rawRequest = (result.outputs as any)?.rateLimitRawObject?.request as CheckRateLimitRequest;
             expect(rawRequest?.invocationLimitValue).toBe(0);
             expect(result.outputs?.rateLimitMaxAllowedInvocations).toBe(0);
         }
     });
 
-    it('should skip rate limiting for streamer when enforceStreamer is false', async () => {
+    it("should skip rate limiting for streamer when enforceStreamer is false", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 1,
             bucketRate: 0.1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 10, // More than available
             inquiry: false,
             enforceStreamer: false, // Skip enforcement for streamer
@@ -336,41 +336,41 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'streamer' // This is the streamer username from our mock
+                username: "streamer" // This is the streamer username from our mock
             }
         };
 
         const result = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(result).toBeTruthy();
-        if (result && typeof result === 'object' && 'outputs' in result) {
-            expect(result.outputs?.rateLimitAllowed).toBe('true');
+        if (result && typeof result === "object" && "outputs" in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe("true");
         }
     });
 
-    it('should trigger approved event when enabled and request passes', async () => {
+    it("should trigger approved event when enabled and request passes", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 10,
             bucketRate: 1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 5,
             inquiry: false,
             enforceStreamer: true,
@@ -380,48 +380,52 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: true, // Enable approved event
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser',
-                chatMessage: { id: 'msg123' }
+                username: "testuser",
+                chatMessage: { id: "msg123" }
             }
         };
 
         await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
-        expect(mockEmitEvent).toHaveBeenCalledWith('approved', expect.objectContaining({
-            alwaysAllow: false,
-            success: true,
-            bucketId: 'test-effect',
-            bucketKey: 'user:testuser',
-            username: 'testuser',
-            messageId: 'msg123'
-        }), false);
+        expect(mockEmitEvent).toHaveBeenCalledWith(
+            "approved",
+            expect.objectContaining({
+                alwaysAllow: false,
+                success: true,
+                bucketId: "test-effect",
+                bucketKey: "user:testuser",
+                username: "testuser",
+                messageId: "msg123"
+            }),
+            false
+        );
     });
 
-    it('should reject channel point reward when enabled and limit exceeded', async () => {
+    it("should reject channel point reward when enabled and limit exceeded", async () => {
         mockTwitchApi.mockResolvedValue(true);
 
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 1,
             bucketRate: 0.1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 10,
             inquiry: false,
             enforceStreamer: true,
@@ -431,18 +435,18 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser',
+                username: "testuser",
                 eventData: {
-                    redemptionId: 'redemption123',
-                    rewardId: 'reward456'
+                    redemptionId: "redemption123",
+                    rewardId: "reward456"
                 }
             }
         };
@@ -450,29 +454,29 @@ describe('checkEffect.onTriggerEvent', () => {
         await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(mockTwitchApi).toHaveBeenCalledWith({
-            rewardId: 'reward456',
-            redemptionIds: ['redemption123'],
+            rewardId: "reward456",
+            redemptionIds: ["redemption123"],
             approve: false
         });
     });
 
-    it('should not reject channel point reward when disabled and limit exceeded', async () => {
+    it("should not reject channel point reward when disabled and limit exceeded", async () => {
         mockTwitchApi.mockResolvedValue(true);
 
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 1,
             bucketRate: 0.1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 10,
             inquiry: false,
             enforceStreamer: true,
@@ -482,18 +486,18 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser',
+                username: "testuser",
                 eventData: {
-                    redemptionId: 'redemption123',
-                    rewardId: 'reward456'
+                    redemptionId: "redemption123",
+                    rewardId: "reward456"
                 }
             }
         };
@@ -501,27 +505,27 @@ describe('checkEffect.onTriggerEvent', () => {
         await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(mockTwitchApi).not.toHaveBeenCalledWith({
-            rewardId: 'reward456',
-            redemptionIds: ['redemption123'],
+            rewardId: "reward456",
+            redemptionIds: ["redemption123"],
             approve: false
         });
     });
 
-    it('should reject when invocation limit is exceeded', async () => {
+    it("should reject when invocation limit is exceeded", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 100, // Plenty of tokens
             bucketRate: 10,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 1,
             inquiry: false,
             enforceStreamer: true,
@@ -531,15 +535,15 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: true,
             invocationLimitValue: 2
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser'
+                username: "testuser"
             }
         };
 
@@ -547,52 +551,52 @@ describe('checkEffect.onTriggerEvent', () => {
         const result1 = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
-        if (result1 && typeof result1 === 'object' && 'outputs' in result1) {
-            expect(result1.outputs?.rateLimitAllowed).toBe('true');
+        if (result1 && typeof result1 === "object" && "outputs" in result1) {
+            expect(result1.outputs?.rateLimitAllowed).toBe("true");
         }
 
         // Second call - should succeed
         const result2 = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
-        if (result2 && typeof result2 === 'object' && 'outputs' in result2) {
-            expect(result2.outputs?.rateLimitAllowed).toBe('true');
+        if (result2 && typeof result2 === "object" && "outputs" in result2) {
+            expect(result2.outputs?.rateLimitAllowed).toBe("true");
         }
 
         // Third call - should fail due to invocation limit
         const result3 = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
-        if (result3 && typeof result3 === 'object' && 'outputs' in result3) {
-            expect(result3.outputs?.rateLimitAllowed).toBe('false');
-            expect(result3.outputs?.rateLimitRejectReason).toBe('invocation_limit');
+        if (result3 && typeof result3 === "object" && "outputs" in result3) {
+            expect(result3.outputs?.rateLimitAllowed).toBe("false");
+            expect(result3.outputs?.rateLimitRejectReason).toBe("invocation_limit");
         }
     });
 
-    it('should provide correct output values for successful request', async () => {
+    it("should provide correct output values for successful request", async () => {
         const effect = {
-            id: 'test-effect',
-            bucketId: 'test-bucket-id',
-            bucketType: 'simple' as const,
+            id: "test-effect",
+            bucketId: "test-bucket-id",
+            bucketType: "simple" as const,
             bucketSize: 10,
             bucketRate: 1,
-            keyType: 'user' as const,
-            key: '',
+            keyType: "user" as const,
+            key: "",
             tokens: 5,
             inquiry: false,
             enforceStreamer: true,
@@ -602,56 +606,56 @@ describe('checkEffect.onTriggerEvent', () => {
             stopExecutionBubble: false,
             triggerEvent: false,
             triggerApproveEvent: false,
-            rateLimitMetadata: '',
+            rateLimitMetadata: "",
             invocationLimit: false,
             invocationLimitValue: 0
         };
 
         const trigger = {
-            type: 'command' as const,
+            type: "command" as const,
             metadata: {
-                username: 'testuser'
+                username: "testuser"
             }
         };
 
         const result = await checkEffect.onTriggerEvent({
             effect,
             trigger,
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
             sendDataToOverlay: () => {},
             abortSignal: new AbortController().signal
         });
 
         expect(result).toBeTruthy();
-        if (result && typeof result === 'object' && 'outputs' in result) {
-            expect(result.outputs?.rateLimitAllowed).toBe('true');
-            expect(typeof result.outputs?.rateLimitNext).toBe('number');
-            expect(typeof result.outputs?.rateLimitInvocation).toBe('number');
+        if (result && typeof result === "object" && "outputs" in result) {
+            expect(result.outputs?.rateLimitAllowed).toBe("true");
+            expect(typeof result.outputs?.rateLimitNext).toBe("number");
+            expect(typeof result.outputs?.rateLimitInvocation).toBe("number");
             expect(result.outputs?.rateLimitRemaining).toBe(-1); // No invocation limit
-            expect(result.outputs?.rateLimitErrorMessage).toBe('');
-            expect(result.outputs?.rateLimitRejectReason).toBe('');
-            expect(result.outputs?.rateLimitRawObject).toHaveProperty('request');
-            expect(result.outputs?.rateLimitRawObject).toHaveProperty('response');
+            expect(result.outputs?.rateLimitErrorMessage).toBe("");
+            expect(result.outputs?.rateLimitRejectReason).toBe("");
+            expect(result.outputs?.rateLimitRawObject).toHaveProperty("request");
+            expect(result.outputs?.rateLimitRawObject).toHaveProperty("response");
         }
     });
 
-    describe('Approval ID functionality', () => {
+    describe("Approval ID functionality", () => {
         let mockApprovalService: jest.MockedFunction<any>;
 
         beforeEach(() => {
-            const main = require('../main');
+            const main = require("../main");
             mockApprovalService = main.approvalService;
         });
 
-        it('should generate approval ID on successful check', async () => {
+        it("should generate approval ID on successful check", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 10,
                 bucketRate: 1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 5,
                 inquiry: false,
                 enforceStreamer: true,
@@ -661,44 +665,44 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'outputs' in result) {
+            if (result && typeof result === "object" && "outputs" in result) {
                 const outputs = result.outputs as any;
                 expect(outputs.rateLimitApprovalId).toBeDefined();
-                expect(typeof outputs.rateLimitApprovalId).toBe('string');
+                expect(typeof outputs.rateLimitApprovalId).toBe("string");
                 expect(outputs.rateLimitApprovalId.length).toBeGreaterThan(0);
             }
         });
 
-        it('should generate UUIDv4 format approval ID', async () => {
+        it("should generate UUIDv4 format approval ID", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 10,
                 bucketRate: 1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 5,
                 inquiry: false,
                 enforceStreamer: true,
@@ -708,28 +712,28 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'outputs' in result) {
+            if (result && typeof result === "object" && "outputs" in result) {
                 const outputs = result.outputs as any;
                 const approvalId = outputs.rateLimitApprovalId;
                 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -737,15 +741,15 @@ describe('checkEffect.onTriggerEvent', () => {
             }
         });
 
-        it('should record approval in approval service', async () => {
+        it("should record approval in approval service", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 10,
                 bucketRate: 1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 5,
                 inquiry: false,
                 enforceStreamer: true,
@@ -755,44 +759,38 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
-            expect(mockApprovalService.recordApproval).toHaveBeenCalledWith(
-                expect.any(String),
-                'test-effect',
-                'user:testuser',
-                5,
-                1
-            );
+            expect(mockApprovalService.recordApproval).toHaveBeenCalledWith(expect.any(String), "test-effect", "user:testuser", 5, 1);
         });
 
-        it('should record inquiry check with zero tokens consumed', async () => {
+        it("should record inquiry check with zero tokens consumed", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 10,
                 bucketRate: 1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 5,
                 inquiry: true,
                 enforceStreamer: true,
@@ -802,44 +800,38 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
-            expect(mockApprovalService.recordApproval).toHaveBeenCalledWith(
-                expect.any(String),
-                'test-effect',
-                'user:testuser',
-                0,
-                0
-            );
+            expect(mockApprovalService.recordApproval).toHaveBeenCalledWith(expect.any(String), "test-effect", "user:testuser", 0, 0);
         });
 
-        it('should include approval ID in approved event metadata', async () => {
+        it("should include approval ID in approved event metadata", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 10,
                 bucketRate: 1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 5,
                 inquiry: false,
                 enforceStreamer: true,
@@ -849,40 +841,44 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: true,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
-            expect(mockEmitEvent).toHaveBeenCalledWith('approved', expect.objectContaining({
-                approvalId: expect.any(String)
-            }), false);
+            expect(mockEmitEvent).toHaveBeenCalledWith(
+                "approved",
+                expect.objectContaining({
+                    approvalId: expect.any(String)
+                }),
+                false
+            );
         });
 
-        it('should generate unique approval IDs for different checks', async () => {
+        it("should generate unique approval IDs for different checks", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 100,
                 bucketRate: 10,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 1,
                 inquiry: false,
                 enforceStreamer: true,
@@ -892,22 +888,22 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result1 = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
@@ -915,26 +911,25 @@ describe('checkEffect.onTriggerEvent', () => {
             const result2 = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
-            if (result1 && typeof result1 === 'object' && 'outputs' in result1 &&
-                result2 && typeof result2 === 'object' && 'outputs' in result2) {
+            if (result1 && typeof result1 === "object" && "outputs" in result1 && result2 && typeof result2 === "object" && "outputs" in result2) {
                 expect(result1.outputs?.rateLimitApprovalId).not.toBe(result2.outputs?.rateLimitApprovalId);
             }
         });
 
-        it('should not generate approval ID for failed check', async () => {
+        it("should not generate approval ID for failed check", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -944,45 +939,45 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'outputs' in result) {
+            if (result && typeof result === "object" && "outputs" in result) {
                 const outputs = result.outputs as any;
-                expect(outputs.rateLimitAllowed).toBe('false');
-                expect(outputs.rateLimitApprovalId).toBe('');
+                expect(outputs.rateLimitAllowed).toBe("false");
+                expect(outputs.rateLimitApprovalId).toBe("");
             }
         });
     });
 
-    describe('Failure effect list', () => {
-        it('should not execute failure effects when runOnFailure is disabled', async () => {
+    describe("Failure effect list", () => {
+        it("should not execute failure effects when runOnFailure is disabled", async () => {
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -992,45 +987,45 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: false,
-                failureEffectList: { list: [{ id: 'some-effect' }] }
+                failureEffectList: { list: [{ id: "some-effect" }] }
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'outputs' in result) {
-                expect(result.outputs?.rateLimitAllowed).toBe('false');
+            if (result && typeof result === "object" && "outputs" in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe("false");
             }
             expect(mockEffectRunner).not.toHaveBeenCalled();
         });
 
-        it('should execute failure effects when runOnFailure is enabled and limit exceeded', async () => {
-            const failureEffects = { list: [{ id: 'test-effect', type: 'some-type' }] };
+        it("should execute failure effects when runOnFailure is enabled and limit exceeded", async () => {
+            const failureEffects = { list: [{ id: "test-effect", type: "some-type" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1040,7 +1035,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1048,23 +1043,23 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'outputs' in result) {
-                expect(result.outputs?.rateLimitAllowed).toBe('false');
+            if (result && typeof result === "object" && "outputs" in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe("false");
             }
             expect(mockEffectRunner).toHaveBeenCalledWith({
                 trigger: trigger,
@@ -1073,16 +1068,16 @@ describe('checkEffect.onTriggerEvent', () => {
             });
         });
 
-        it('should execute failure effects before stop execution is returned', async () => {
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+        it("should execute failure effects before stop execution is returned", async () => {
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1092,7 +1087,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1100,37 +1095,37 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(mockEffectRunner).toHaveBeenCalled();
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'execution' in result) {
+            if (result && typeof result === "object" && "execution" in result) {
                 expect(result.execution?.stop).toBe(true);
             }
         });
 
-        it('should not execute failure effects when request is allowed', async () => {
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+        it("should not execute failure effects when request is allowed", async () => {
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 100,
                 bucketRate: 10,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 1,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1140,7 +1135,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1148,40 +1143,40 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'outputs' in result) {
-                expect(result.outputs?.rateLimitAllowed).toBe('true');
+            if (result && typeof result === "object" && "outputs" in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe("true");
             }
             expect(mockEffectRunner).not.toHaveBeenCalled();
         });
 
-        it('should handle errors in failure effect execution gracefully', async () => {
-            const { logger } = require('../main');
-            mockEffectRunner.mockRejectedValue(new Error('Effect failed'));
+        it("should handle errors in failure effect execution gracefully", async () => {
+            const { logger } = require("../main");
+            mockEffectRunner.mockRejectedValue(new Error("Effect failed"));
 
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1191,7 +1186,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1199,37 +1194,37 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'outputs' in result) {
-                expect(result.outputs?.rateLimitAllowed).toBe('false');
+            if (result && typeof result === "object" && "outputs" in result) {
+                expect(result.outputs?.rateLimitAllowed).toBe("false");
             }
-            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to execute failure effect list'));
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Failed to execute failure effect list"));
         });
 
-        it('should clone outputs when executing failure effects', async () => {
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+        it("should clone outputs when executing failure effects", async () => {
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1239,7 +1234,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1247,20 +1242,20 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const testEvent = {
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal,
                 outputs: {
-                    testOutput: 'value'
+                    testOutput: "value"
                 }
             };
 
@@ -1272,22 +1267,22 @@ describe('checkEffect.onTriggerEvent', () => {
             expect(callArg.outputs).toEqual(testEvent.outputs);
         });
 
-        it('should set stop to true when failure effects request it', async () => {
+        it("should set stop to true when failure effects request it", async () => {
             mockEffectRunner.mockResolvedValue({
                 success: true,
                 stopEffectExecution: true,
                 outputs: {}
             });
 
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1297,7 +1292,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1305,42 +1300,42 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'execution' in result) {
+            if (result && typeof result === "object" && "execution" in result) {
                 expect(result.execution?.stop).toBe(true);
             }
         });
 
-        it('should keep stop and bubbleStop false when failure effects do not request them', async () => {
+        it("should keep stop and bubbleStop false when failure effects do not request them", async () => {
             mockEffectRunner.mockResolvedValue({
                 success: true,
                 stopEffectExecution: false,
                 outputs: {}
             });
 
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1350,7 +1345,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1358,42 +1353,42 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'execution' in result) {
+            if (result && typeof result === "object" && "execution" in result) {
                 expect(result.execution?.stop).toBe(false);
             }
         });
 
-        it('should keep stop and bubbleStop true when rate limiter options are true', async () => {
+        it("should keep stop and bubbleStop true when rate limiter options are true", async () => {
             mockEffectRunner.mockResolvedValue({
                 success: true,
                 stopEffectExecution: false,
                 outputs: {}
             });
 
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1403,7 +1398,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: true,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1411,43 +1406,43 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'execution' in result) {
+            if (result && typeof result === "object" && "execution" in result) {
                 expect(result.execution?.stop).toBe(true);
                 expect(result.execution?.bubbleStop).toBe(true);
             }
         });
 
-        it('should not propagate execution stop when stopEffectExecution is false', async () => {
+        it("should not propagate execution stop when stopEffectExecution is false", async () => {
             mockEffectRunner.mockResolvedValue({
                 success: true,
                 stopEffectExecution: false,
                 outputs: {}
             });
 
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1457,7 +1452,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1465,38 +1460,38 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'execution' in result) {
+            if (result && typeof result === "object" && "execution" in result) {
                 expect(result.execution?.stop).toBe(false);
             }
         });
 
-        it('should keep original values when failure effects return null (queued)', async () => {
+        it("should keep original values when failure effects return null (queued)", async () => {
             mockEffectRunner.mockResolvedValue(null);
 
-            const failureEffects = { list: [{ id: 'test-effect' }] };
+            const failureEffects = { list: [{ id: "test-effect" }] };
             const effect = {
-                id: 'test-effect',
-                bucketId: 'test-bucket-id',
-                bucketType: 'simple' as const,
+                id: "test-effect",
+                bucketId: "test-bucket-id",
+                bucketType: "simple" as const,
                 bucketSize: 1,
                 bucketRate: 0.1,
-                keyType: 'user' as const,
-                key: '',
+                keyType: "user" as const,
+                key: "",
                 tokens: 10,
                 inquiry: false,
                 enforceStreamer: true,
@@ -1506,7 +1501,7 @@ describe('checkEffect.onTriggerEvent', () => {
                 stopExecutionBubble: false,
                 triggerEvent: false,
                 triggerApproveEvent: false,
-                rateLimitMetadata: '',
+                rateLimitMetadata: "",
                 invocationLimit: false,
                 invocationLimitValue: 0,
                 runOnFailure: true,
@@ -1514,22 +1509,22 @@ describe('checkEffect.onTriggerEvent', () => {
             };
 
             const trigger = {
-                type: 'command' as const,
+                type: "command" as const,
                 metadata: {
-                    username: 'testuser'
+                    username: "testuser"
                 }
             };
 
             const result = await checkEffect.onTriggerEvent({
                 effect,
                 trigger,
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                // biome-ignore lint/suspicious/noEmptyBlockStatements: test mock function
                 sendDataToOverlay: () => {},
                 abortSignal: new AbortController().signal
             });
 
             expect(result).toBeTruthy();
-            if (result && typeof result === 'object' && 'execution' in result) {
+            if (result && typeof result === "object" && "execution" in result) {
                 expect(result.execution?.stop).toBe(false);
                 expect(result.execution?.bubbleStop).toBe(false);
             }

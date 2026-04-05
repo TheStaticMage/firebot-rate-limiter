@@ -196,7 +196,7 @@ const rateLimiterPage: AngularJsPage = {
                 name: "START TOKENS",
                 icon: "fa-play",
                 headerStyles: {
-                    'width': '120px'
+                    width: "120px"
                 },
                 dataField: "startTokens",
                 sortable: true,
@@ -208,7 +208,7 @@ const rateLimiterPage: AngularJsPage = {
                 name: "MAX TOKENS",
                 icon: "fa-arrow-up",
                 headerStyles: {
-                    'width': '120px'
+                    width: "120px"
                 },
                 dataField: "maxTokens",
                 sortable: true,
@@ -220,7 +220,7 @@ const rateLimiterPage: AngularJsPage = {
                 name: "REFILL RATE",
                 icon: "fa-tachometer-alt",
                 headerStyles: {
-                    'width': '120px'
+                    width: "120px"
                 },
                 dataField: "refillRate",
                 sortable: true,
@@ -232,7 +232,7 @@ const rateLimiterPage: AngularJsPage = {
                 name: "PERSISTENT",
                 icon: "fa-save",
                 headerStyles: {
-                    'width': '100px'
+                    width: "100px"
                 },
                 dataField: "persistBucket",
                 sortable: true,
@@ -251,7 +251,7 @@ const rateLimiterPage: AngularJsPage = {
                 name: "LIFETIME MAX",
                 icon: "fa-infinity",
                 headerStyles: {
-                    'width': '120px'
+                    width: "120px"
                 },
                 dataField: "lifetimeMaxTokensValue",
                 sortable: true,
@@ -303,7 +303,7 @@ const rateLimiterPage: AngularJsPage = {
                 name: "TYPE",
                 icon: "fa-tag",
                 headerStyles: {
-                    'width': '120px'
+                    width: "120px"
                 },
                 dataField: "type",
                 sortable: true,
@@ -315,7 +315,7 @@ const rateLimiterPage: AngularJsPage = {
                 name: "DATA ENTRIES",
                 icon: "fa-list",
                 headerStyles: {
-                    'width': '140px'
+                    width: "140px"
                 },
                 dataField: "dataEntryCount",
                 sortable: true,
@@ -340,7 +340,7 @@ const rateLimiterPage: AngularJsPage = {
             const response = rateLimiterService.getInspectorData();
             if (response.errorMessage) {
                 ngToast.create({
-                    className: 'danger',
+                    className: "danger",
                     content: `Error loading inspector data: ${response.errorMessage}`
                 });
                 return;
@@ -353,11 +353,11 @@ const rateLimiterPage: AngularJsPage = {
             $scope.bucketData = formattedData;
             $scope.$evalAsync(() => {
                 // Also directly update the DOM element to ensure it reflects the change
-                const textField = document.getElementById('textField') as HTMLTextAreaElement;
+                const textField = document.getElementById("textField") as HTMLTextAreaElement;
                 if (textField) {
                     textField.value = formattedData;
                     // Trigger input event to sync with AngularJS
-                    textField.dispatchEvent(new Event('input'));
+                    textField.dispatchEvent(new Event("input"));
                 }
             });
         };
@@ -384,7 +384,7 @@ const rateLimiterPage: AngularJsPage = {
                 const bucketResponse = rateLimiterService.getBucket(bucketId);
                 if (bucketResponse.errorMessage || !bucketResponse.bucket) {
                     ngToast.create({
-                        className: 'danger',
+                        className: "danger",
                         content: `Error: Bucket not found: id=${bucketId}`
                     });
                     return;
@@ -395,7 +395,7 @@ const rateLimiterPage: AngularJsPage = {
             const bucketData = rateLimiterService.getBucketData(bucketId);
             if (bucketData.errorMessage) {
                 ngToast.create({
-                    className: 'danger',
+                    className: "danger",
                     content: `Error fetching bucket data: ${bucketData.errorMessage}`
                 });
                 return;
@@ -422,14 +422,14 @@ const rateLimiterPage: AngularJsPage = {
             const response = rateLimiterService.deleteBucket(bucketId);
             if (response.errorMessage) {
                 ngToast.create({
-                    className: 'danger',
+                    className: "danger",
                     content: `Error deleting bucket: ${response.errorMessage}`
                 });
                 return;
             }
 
             ngToast.create({
-                className: 'success',
+                className: "success",
                 content: `Bucket "${$scope.bucketName}" deleted successfully.`
             });
 
@@ -443,11 +443,22 @@ const rateLimiterPage: AngularJsPage = {
             $scope.displayDeleteConfirmation = true;
         };
 
-        $scope.saveButton = (bucketIdIn: string, bucketName: string, bucketStartTokens: number, bucketMaxTokens: number, bucketRefillRate: number, bucketFillFromStart: boolean, bucketLifetimeMaxTokens: boolean, bucketLifetimeMaxTokensValue: number, persistBucket: boolean, fillBucketAcrossRestarts: boolean) => {
+        $scope.saveButton = (
+            bucketIdIn: string,
+            bucketName: string,
+            bucketStartTokens: number,
+            bucketMaxTokens: number,
+            bucketRefillRate: number,
+            bucketFillFromStart: boolean,
+            bucketLifetimeMaxTokens: boolean,
+            bucketLifetimeMaxTokensValue: number,
+            persistBucket: boolean,
+            fillBucketAcrossRestarts: boolean
+        ) => {
             const bucketId = bucketIdIn || crypto.randomUUID();
             const data: Bucket = {
                 name: bucketName.trim(),
-                type: 'advanced',
+                type: "advanced",
                 startTokens: bucketStartTokens,
                 maxTokens: bucketMaxTokens,
                 refillRate: bucketRefillRate,
@@ -461,14 +472,14 @@ const rateLimiterPage: AngularJsPage = {
             const response = rateLimiterService.saveBucket(bucketId, data);
             if (response.errorMessage) {
                 ngToast.create({
-                    className: 'danger',
+                    className: "danger",
                     content: `Error saving bucket: ${response.errorMessage}`
                 });
                 return;
             }
 
             ngToast.create({
-                className: 'success',
+                className: "success",
                 content: `Bucket "${bucketName}" saved successfully.`
             });
 
@@ -494,7 +505,7 @@ const rateLimiterPage: AngularJsPage = {
             const result = backendCommunicator.fireEventSync("rate-limiter:saveBucketData", { bucketId: bucketId, bucketData: bucketData, dryRun: false });
             if (result.errorMessage) {
                 ngToast.create({
-                    className: 'danger',
+                    className: "danger",
                     content: "Error saving bucket data!"
                 });
                 $scope.textError = result.errorMessage;
@@ -502,7 +513,7 @@ const rateLimiterPage: AngularJsPage = {
             }
 
             ngToast.create({
-                className: 'success',
+                className: "success",
                 content: `Bucket data for "${$scope.bucketName}" saved successfully.`
             });
 
@@ -513,7 +524,7 @@ const rateLimiterPage: AngularJsPage = {
             const response = rateLimiterService.getBuckets();
             if (response.errorMessage) {
                 ngToast.create({
-                    className: 'danger',
+                    className: "danger",
                     content: `Error fetching buckets: ${response.errorMessage}`
                 });
                 return;
@@ -525,11 +536,11 @@ const rateLimiterPage: AngularJsPage = {
             $scope.bucketMap = buckets;
             const bucketArray = Object.entries(buckets)
                 .map(([id, bucket]) => ({
-                    ...(bucket),
+                    ...bucket,
                     id
                 }))
-                .filter(bucket => bucket.type !== 'simple');
-            bucketArray.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+                .filter((bucket) => bucket.type !== "simple");
+            bucketArray.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
             $scope.buckets = bucketArray;
         };
 

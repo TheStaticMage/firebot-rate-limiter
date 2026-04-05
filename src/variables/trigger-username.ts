@@ -1,6 +1,6 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { Trigger } from '@crowbartools/firebot-custom-scripts-types/types/triggers';
-import { LimitExceededEventMetadata } from '../shared/types';
+import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { LimitExceededEventMetadata } from "../shared/types";
 
 export const rateLimitTriggerUsername: ReplaceVariable = {
     definition: {
@@ -8,8 +8,8 @@ export const rateLimitTriggerUsername: ReplaceVariable = {
         description: "Returns the username from the original event source that triggered the rate limit check.",
         possibleDataOutput: ["text"],
         triggers: {
-            "manual": true,
-            "event": ['rate-limiter:limit-exceeded']
+            manual: true,
+            event: ["rate-limiter:limit-exceeded"]
         }
     },
     evaluator: async (trigger: Trigger) => {
