@@ -5,6 +5,12 @@ import { CheckRateLimitRequest } from "../shared/types";
 import { checkEffect } from "./check";
 
 // Mock the logger to avoid actual logging during tests
+jest.mock("node:fs", () => ({
+    existsSync: jest.fn().mockReturnValue(false),
+    readFileSync: jest.fn().mockReturnValue("{}"),
+    writeFileSync: jest.fn()
+}));
+
 jest.mock("../main", () => ({
     logger: {
         debug: jest.fn(),
@@ -31,11 +37,6 @@ jest.mock("../main", () => ({
                 channelRewards: {
                     approveOrRejectChannelRewardRedemption: jest.fn()
                 }
-            },
-            fs: {
-                existsSync: jest.fn().mockReturnValue(false),
-                readFileSync: jest.fn().mockReturnValue("{}"),
-                writeFileSync: jest.fn()
             },
             frontendCommunicator: {
                 on: jest.fn(),

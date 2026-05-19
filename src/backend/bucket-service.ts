@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import { FrontendCommunicator } from "@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator";
 import { firebot, logger } from "../main";
 import { Bucket, BucketWithId, DeleteBucketResponse, GetBucketResponse, GetBucketsAsArrayResponse, GetBucketsResponse, InstantiateBucketParameters, SaveBucketResponse } from "../shared/types";
@@ -165,7 +166,6 @@ export class BucketService {
 
     private loadBucketsFromFile(): void {
         try {
-            const fs = firebot.modules.fs;
             if (fs.existsSync(this.filePath)) {
                 const data = fs.readFileSync(this.filePath, "utf8");
                 const parsed = JSON.parse(data);
@@ -183,7 +183,6 @@ export class BucketService {
     }
 
     private saveBucketsToFile(): void {
-        const fs = firebot.modules.fs;
         fs.writeFileSync(this.filePath, JSON.stringify(this.buckets, null, 2));
         logger.debug(`Saved ${Object.keys(this.buckets).length} buckets to ${this.filePath}`);
     }

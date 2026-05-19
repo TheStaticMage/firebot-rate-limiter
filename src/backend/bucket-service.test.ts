@@ -4,14 +4,15 @@ import { firebot, logger } from "../main";
 import { Bucket } from "../shared/types";
 import { BucketService, bucketService, initializeBucketService } from "./bucket-service";
 
+jest.mock("node:fs", () => ({
+    existsSync: jest.fn(),
+    readFileSync: jest.fn(),
+    writeFileSync: jest.fn()
+}));
+
 jest.mock("../main", () => ({
     firebot: {
         modules: {
-            fs: {
-                existsSync: jest.fn(),
-                readFileSync: jest.fn(),
-                writeFileSync: jest.fn()
-            },
             frontendCommunicator: {
                 on: jest.fn(),
                 send: jest.fn()
@@ -48,8 +49,8 @@ describe("BucketService", () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        (firebot.modules.fs.existsSync as jest.Mock).mockReturnValue(false);
-        (firebot.modules.fs.readFileSync as jest.Mock).mockReturnValue("{}");
+        (require("node:fs").existsSync as jest.Mock).mockReturnValue(false);
+        (require("node:fs").readFileSync as jest.Mock).mockReturnValue("{}");
         service = new BucketService();
     });
 
@@ -59,8 +60,8 @@ describe("BucketService", () => {
     });
 
     it("should save and load buckets from file", () => {
-        (firebot.modules.fs.existsSync as jest.Mock).mockReturnValue(true);
-        (firebot.modules.fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ [bucketId]: bucket }));
+        (require("node:fs").existsSync as jest.Mock).mockReturnValue(true);
+        (require("node:fs").readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ [bucketId]: bucket }));
         service = new BucketService();
         expect(service.getBuckets()[bucketId]).toEqual(bucket);
     });
@@ -68,7 +69,7 @@ describe("BucketService", () => {
     it("should save a bucket and persist to file", () => {
         service["saveBucket"](bucketId, { ...bucket });
         expect(service.getBuckets()[bucketId]).toEqual(expect.objectContaining(bucket));
-        expect(firebot.modules.fs.writeFileSync).toHaveBeenCalled();
+        expect(require("node:fs").writeFileSync).toHaveBeenCalled();
         expect(logger.info).toHaveBeenCalledWith(expect.stringContaining("Updated bucket"));
     });
 
@@ -189,8 +190,8 @@ describe("BucketService", () => {
     });
 
     it("should handle file read error gracefully", () => {
-        (firebot.modules.fs.existsSync as jest.Mock).mockReturnValue(true);
-        (firebot.modules.fs.readFileSync as jest.Mock).mockImplementation(() => {
+        (require("node:fs").existsSync as jest.Mock).mockReturnValue(true);
+        (require("node:fs").readFileSync as jest.Mock).mockImplementation(() => {
             throw new Error("fail");
         });
         service = new BucketService();

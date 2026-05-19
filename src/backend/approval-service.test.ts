@@ -4,6 +4,12 @@ import { BucketData } from "./bucket-data";
 import { BucketService } from "./bucket-service";
 
 // Mock the logger
+jest.mock("node:fs", () => ({
+    existsSync: jest.fn().mockReturnValue(false),
+    readFileSync: jest.fn().mockReturnValue("{}"),
+    writeFileSync: jest.fn()
+}));
+
 jest.mock("../main", () => ({
     logger: {
         debug: jest.fn(),
@@ -13,11 +19,6 @@ jest.mock("../main", () => ({
     },
     firebot: {
         modules: {
-            fs: {
-                existsSync: jest.fn().mockReturnValue(false),
-                readFileSync: jest.fn().mockReturnValue("{}"),
-                writeFileSync: jest.fn()
-            },
             frontendCommunicator: {
                 on: jest.fn(),
                 send: jest.fn()

@@ -23,7 +23,7 @@ function initializeApprovalService(): void {
     }
 }
 
-const scriptVersion = "0.2.0";
+const scriptVersion = "0.2.1";
 
 const script: Firebot.CustomScript<ScriptSettings> = {
     getScriptManifest: () => {

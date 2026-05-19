@@ -10,7 +10,8 @@ This plugin uses semantic versioning to indicate compatibility changes.
 
 | Plugin Version | Firebot Version |
 |---|---|
-| 0.1.0+ | 5.65+ |
+| 0.2.1+ | 5.65 and 5.66 |
+| 0.1.0 - 0.2.0 | 5.65 |
 | 0.0.7 | 5.64 |
 
 ## Upgrade Procedure
@@ -23,5 +24,7 @@ This plugin uses semantic versioning to indicate compatibility changes.
 Optional: Delete any older versions of this plugin from your Firebot scripts directory to keep it clean.
 
 ## Upgrade Notes
+
+:fire: **Firebot 5.66**: Supported in plugin version 0.2.1 and later. This version complies with a breaking change to the Firebot custom scripting API.
 
 :fire: **Upgrading to 0.1.0+**: Requires Firebot 5.65 or later. If you are running Firebot 5.64, you must remain on version 0.0.7.
