@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import { FrontendCommunicator } from "@crowbartools/firebot-custom-scripts-types/types/modules/frontend-communicator";
 import { firebot, logger } from "../main";
 import {
@@ -357,7 +358,6 @@ export class BucketData {
 
     private loadBucketDataFromFile(): Record<string, BucketDataObject> {
         try {
-            const { fs } = firebot.modules;
             if (!fs.existsSync(this.filePath)) {
                 this.saveBucketDataToFile({});
             }
@@ -399,7 +399,6 @@ export class BucketData {
 
     private saveBucketDataToFile(data: Record<string, BucketDataObject>): void {
         try {
-            const { fs } = firebot.modules;
             const jsonData = JSON.stringify(data, null, 2);
             fs.writeFileSync(this.filePath, jsonData, "utf-8");
         } catch (error) {

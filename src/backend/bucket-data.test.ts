@@ -1,14 +1,15 @@
 import { Bucket, BucketDataEntry, CheckRateLimitRequest, RejectReason } from "../shared/types";
 import { BucketData } from "./bucket-data";
 
+jest.mock("node:fs", () => ({
+    existsSync: jest.fn(),
+    readFileSync: jest.fn(),
+    writeFileSync: jest.fn()
+}));
+
 jest.mock("../main", () => ({
     firebot: {
         modules: {
-            fs: {
-                existsSync: jest.fn(),
-                readFileSync: jest.fn(),
-                writeFileSync: jest.fn()
-            },
             frontendCommunicator: {
                 on: jest.fn(),
                 send: jest.fn()
@@ -62,8 +63,8 @@ describe("BucketData", () => {
     const mockedBucketService = require("./bucket-service").bucketService;
     beforeEach(() => {
         jest.useFakeTimers().setSystemTime(now);
-        (require("../main").firebot.modules.fs.existsSync as jest.Mock).mockReturnValue(false);
-        (require("../main").firebot.modules.fs.readFileSync as jest.Mock).mockReturnValue("{}");
+        (require("node:fs").existsSync as jest.Mock).mockReturnValue(false);
+        (require("node:fs").readFileSync as jest.Mock).mockReturnValue("{}");
         mockedBucketService.__setBuckets({
             [bucketId]: bucket
         });

@@ -5,6 +5,12 @@ import { ApprovalService } from "../backend/approval-service";
 import { undoEffect } from "./undo";
 
 // Mock the logger and approval service
+jest.mock("node:fs", () => ({
+    existsSync: jest.fn().mockReturnValue(false),
+    readFileSync: jest.fn().mockReturnValue("{}"),
+    writeFileSync: jest.fn()
+}));
+
 jest.mock("../main", () => ({
     logger: {
         debug: jest.fn(),
@@ -17,11 +23,6 @@ jest.mock("../main", () => ({
     },
     firebot: {
         modules: {
-            fs: {
-                existsSync: jest.fn().mockReturnValue(false),
-                readFileSync: jest.fn().mockReturnValue("{}"),
-                writeFileSync: jest.fn()
-            },
             frontendCommunicator: {
                 on: jest.fn(),
                 send: jest.fn()
