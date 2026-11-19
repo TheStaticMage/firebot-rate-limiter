@@ -1,5 +1,9 @@
 # Firebot Rate Limiter
 
+## Deprecation Notice
+
+This plugin is not tested with Firebot 5.67 or later and will no longer be developed. No support or updates will be provided. Code and documentation remain archived here for reference purposes only.
+
 ## Introduction
 
 This is a rate limiter to prevent particular effects from running too frequently in [Firebot](https://firebot.app). This is primarily intended to help avoid abuse, but it can also be used to implement advanced logic around cooldowns, maximum invocations per stream, etc.
@@ -158,7 +162,7 @@ Recently I set up the [Firebot Kick Integration](https://github.com/TheStaticMag
 4. Create a new event of type **Rate Limit Approved**. Add a filter: **Rate Limiter Bucket** = _the bucket you created in step 1_. And then add any effect(s) -- in my case, it was the "Play Sound" effect, but this can be whatever you want.
 
 Now, whenever _either_ of the two trigger events happens, the same 5 second rate limit will apply. As an added bonus, you have only defined your "Play Sound" effect in one place, so if you add additional trigger events, you will effectively be using the same effect list to handle it.
-
+<!--
 ## Support
 
 The best way to get help is in my Discord server. Join the [The Static Discord](https://discord.gg/hw32MM2Qxq) and then visit the `#firebot-rate-limiter` channel there.
@@ -191,3 +195,4 @@ Cooldowns and maximum usage counts are special cases of rate limits and can be m
 ### Can I change the bucket size or refill rate after I've created a simple bucket?
 
 No. Once a simple bucket has been created (by running an effect that uses it), the bucket parameters (size and refill rate) are fixed and cannot be changed, even if you modify the effect settings. If you need to change these parameters on the fly, use an advanced bucket instead. Advanced buckets are defined in the RATE LIMITER settings and can be edited at any time. You can also restart Firebot or duplicate the "Check Request" effect, both of which will effectively clear any data in the bucket.
+-->
